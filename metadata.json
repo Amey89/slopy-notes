@@ -1,0 +1,6 @@
+{
+  "name": "Notes & Tasks",
+  "description": "High-performance notes and tasks app featuring rich text formatting, image attachments, tags, nested sub-tasks, full-screen reminders, home widget, universal search, and local backups.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
