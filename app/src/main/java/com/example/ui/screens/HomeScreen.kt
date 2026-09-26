@@ -84,6 +84,8 @@ import com.example.ui.components.RenameFolderDialog
 import com.example.ui.components.SearchFilter
 import com.example.ui.components.TaskCard
 import com.example.ui.components.UniversalSearchBar
+import com.example.ui.model.NoteUiItem
+import com.example.ui.model.TaskUiItem
 import com.example.ui.theme.appBackground
 import com.example.ui.viewmodel.NotesTasksViewModel
 
@@ -100,6 +102,19 @@ fun HomeScreen(
 
     val notesList by viewModel.notesList.collectAsState()
     val tasksList by viewModel.tasksList.collectAsState()
+    val noteUiItems by viewModel.noteUiItems.collectAsState()
+    val taskUiItems by viewModel.taskUiItems.collectAsState()
+
+    // Stable lambdas to prevent LazyColumn item recomposition churn
+    val onOpenNoteStable: (NoteEntity) -> Unit = remember(onOpenNote) { { note -> onOpenNote(note) } }
+    val onToggleNoteStarStable: (NoteEntity) -> Unit = remember(viewModel) { { note -> viewModel.toggleNoteStar(note) } }
+    val onDeleteNoteStable: (Long) -> Unit = remember(viewModel) { { id -> viewModel.deleteNote(id) } }
+
+    val onOpenTaskStable: (TaskWithSubtasks) -> Unit = remember(onOpenTask) { { task -> onOpenTask(task) } }
+    val onToggleTaskCompletedStable: (Long, Boolean) -> Unit = remember(viewModel) { { id, isDone -> viewModel.toggleTaskCompleted(id, isDone) } }
+    val onToggleTaskStarStable: (TaskWithSubtasks) -> Unit = remember(viewModel) { { task -> viewModel.toggleTaskStar(task) } }
+    val onToggleSubtaskStable: (Long, Boolean) -> Unit = remember(viewModel) { { subtaskId, isDone -> viewModel.toggleSubtaskCompleted(subtaskId, isDone) } }
+    val onDeleteTaskStable: (Long) -> Unit = remember(viewModel) { { id -> viewModel.deleteTask(id) } }
 
     val allNotes by viewModel.allNotes.collectAsState()
     val allTasks by viewModel.allTasks.collectAsState()
@@ -260,6 +275,8 @@ fun HomeScreen(
                 )
             }
 
+            val pendingTasksCount = remember(tasksList) { tasksList.count { !it.task.isCompleted } }
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -354,7 +371,7 @@ fun HomeScreen(
                 // 3. Tasks Section
                 val showTasks = (activeFilter in listOf(SearchFilter.ALL, SearchFilter.TASKS, SearchFilter.REMINDERS, SearchFilter.STARRED))
 
-                if (showTasks && tasksList.isNotEmpty()) {
+                if (showTasks && taskUiItems.isNotEmpty()) {
                     item(key = "tasks_header", contentType = "header") {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -365,7 +382,7 @@ fun HomeScreen(
                                 text = if (selectedFolder?.id == FolderEntity.COMPLETED_TASKS_FOLDER_ID)
                                     "PERMANENT COMPLETED TASKS (${tasksList.size})"
                                 else
-                                    "TASKS (${tasksList.count { !it.task.isCompleted }} pending)",
+                                    "TASKS ($pendingTasksCount pending)",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (selectedFolder?.id == FolderEntity.COMPLETED_TASKS_FOLDER_ID) Color(0xFF16A34A) else MaterialTheme.colorScheme.primary,
@@ -375,25 +392,17 @@ fun HomeScreen(
                     }
 
                     items(
-                        items = tasksList, 
-                        key = { "task_${it.task.id}" },
+                        items = taskUiItems, 
+                        key = { "task_${it.taskWithSubtasks.task.id}" },
                         contentType = { "task" }
-                    ) { taskWithSubtasks ->
+                    ) { taskUiItem ->
                         TaskCard(
-                            taskWithSubtasks = taskWithSubtasks,
-                            onClick = { onOpenTask(taskWithSubtasks) },
-                            onToggleCompleted = { isDone ->
-                                viewModel.toggleTaskCompleted(taskWithSubtasks.task.id, isDone)
-                            },
-                            onToggleStar = {
-                                viewModel.toggleTaskStar(taskWithSubtasks)
-                            },
-                            onToggleSubtask = { subtask, isDone ->
-                                viewModel.toggleSubtaskCompleted(subtask.id, isDone)
-                            },
-                            onDelete = {
-                                viewModel.deleteTask(taskWithSubtasks.task.id)
-                            },
+                            uiItem = taskUiItem,
+                            onClick = onOpenTaskStable,
+                            onToggleCompleted = onToggleTaskCompletedStable,
+                            onToggleStar = onToggleTaskStarStable,
+                            onToggleSubtask = onToggleSubtaskStable,
+                            onDelete = onDeleteTaskStable,
                             performanceMode = performanceMode
                         )
                     }
@@ -402,7 +411,7 @@ fun HomeScreen(
                 // 4. Notes Section
                 val showNotes = (activeFilter in listOf(SearchFilter.ALL, SearchFilter.NOTES, SearchFilter.STARRED))
 
-                if (showNotes && notesList.isNotEmpty()) {
+                if (showNotes && noteUiItems.isNotEmpty()) {
                     item(key = "notes_header", contentType = "header") {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -418,26 +427,22 @@ fun HomeScreen(
                     }
 
                     items(
-                        items = notesList, 
-                        key = { "note_${it.id}" },
+                        items = noteUiItems, 
+                        key = { "note_${it.note.id}" },
                         contentType = { "note" }
-                    ) { note ->
+                    ) { noteUiItem ->
                         NoteCard(
-                            note = note,
-                            onClick = { onOpenNote(note) },
-                            onToggleStar = {
-                                viewModel.toggleNoteStar(note)
-                            },
-                            onDelete = {
-                                viewModel.deleteNote(note.id)
-                            },
+                            uiItem = noteUiItem,
+                            onClick = onOpenNoteStable,
+                            onToggleStar = onToggleNoteStarStable,
+                            onDelete = onDeleteNoteStable,
                             performanceMode = performanceMode
                         )
                     }
                 }
 
                 // Empty State
-                val isEmpty = (notesList.isEmpty() && tasksList.isEmpty() && visibleFolders.isEmpty())
+                val isEmpty = notesList.isEmpty() && tasksList.isEmpty() && visibleFolders.isEmpty()
                 if (isEmpty) {
                     item(key = "empty_state", contentType = "empty_state") {
                         Box(

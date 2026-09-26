@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -7,7 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteOutline
@@ -39,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -50,58 +50,57 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.data.model.FolderEntity
 import com.example.data.model.NoteEntity
+import com.example.ui.model.NoteUiItem
 import com.example.ui.theme.NoteAccentColorsDark
 import com.example.ui.theme.NoteAccentColorsLight
-import android.content.Intent
-import android.net.Uri
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+
+// Top-level static constants to prevent object allocations during 120Hz fast scrolling
+private val NoteCardShape = RoundedCornerShape(18.dp)
+private val SharedLinkBadgeShape = RoundedCornerShape(8.dp)
+private val HeroImageShape = RoundedCornerShape(12.dp)
+private val ThumbnailShape = RoundedCornerShape(10.dp)
+private val UrlPillShape = RoundedCornerShape(8.dp)
+private val SharedLinkBorder = BorderStroke(1.5.dp, Color(0xFF2563EB).copy(alpha = 0.55f))
 
 private val CLEAN_MARKDOWN_REGEX = Regex("[#*`_~>\\[\\]]")
 
+/**
+ * 120Hz Smooth Scrolling Optimized NoteCard.
+ * Uses pre-computed [NoteUiItem] where all string splitting, regex parsing,
+ * URL extraction, and date formatting are done off the main thread.
+ * Lambdas and models are stable to ensure Compose skips recomposition entirely.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NoteCard(
-    note: NoteEntity,
-    onClick: () -> Unit,
-    onToggleStar: () -> Unit,
-    onDelete: () -> Unit,
+    uiItem: NoteUiItem,
+    onClick: (NoteEntity) -> Unit,
+    onToggleStar: (NoteEntity) -> Unit,
+    onDelete: (Long) -> Unit,
     modifier: Modifier = Modifier,
     performanceMode: Boolean = false
 ) {
+    val note = uiItem.note
     val isDark = isSystemInDarkTheme()
     val palette = if (isDark) NoteAccentColorsDark else NoteAccentColorsLight
     val cardBg = palette.getOrElse(note.colorIndex) { MaterialTheme.colorScheme.surface }
-    val isSharedLinkNote = note.folderId == FolderEntity.SHARED_LINKS_FOLDER_ID
     val context = LocalContext.current
 
-    val imageList = remember(note.imageUris) {
-        if (note.imageUris.isBlank()) emptyList() 
-        else note.imageUris.split(",").map { it.trim() }.filter { it.isNotBlank() }
-    }
-    val tagsList = remember(note.tags) {
-        if (note.tags.isBlank()) emptyList()
-        else note.tags.split(",").map { it.trim() }.filter { it.isNotBlank() }
+    val outlineVariantColor = MaterialTheme.colorScheme.outlineVariant
+    val cardBorder = remember(uiItem.isSharedLinkNote, outlineVariantColor) {
+        if (uiItem.isSharedLinkNote) SharedLinkBorder
+        else BorderStroke(1.dp, outlineVariantColor.copy(alpha = 0.45f))
     }
 
-    val extractedUrl = remember(note.content) {
-        if (isSharedLinkNote || tagsList.contains("link")) {
-            note.content.lines().firstOrNull { it.trim().startsWith("http://") || it.trim().startsWith("https://") }?.trim()
-        } else null
-    }
-
-    val cardBorder = if (isSharedLinkNote) {
-        androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF2563EB).copy(alpha = 0.55f))
-    } else {
-        androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
-    }
+    val onCardClick = remember(onClick, note) { { onClick(note) } }
+    val onStarClick = remember(onToggleStar, note) { { onToggleStar(note) } }
+    val onDeleteClick = remember(onDelete, note.id) { { onDelete(note.id) } }
 
     Card(
-        onClick = onClick,
+        onClick = onCardClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = NoteCardShape,
         colors = CardDefaults.cardColors(containerColor = cardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = cardBorder
@@ -122,11 +121,11 @@ fun NoteCard(
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (isSharedLinkNote) {
+                    if (uiItem.isSharedLinkNote) {
                         Box(
                             modifier = Modifier
                                 .size(28.dp)
-                                .background(Color(0xFF2563EB).copy(alpha = 0.15f), RoundedCornerShape(8.dp)),
+                                .background(Color(0xFF2563EB).copy(alpha = 0.15f), SharedLinkBadgeShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -139,7 +138,7 @@ fun NoteCard(
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     Text(
-                        text = note.title.ifBlank { if (isSharedLinkNote) "Shared Link" else "Untitled Note" },
+                        text = uiItem.displayTitle,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -151,7 +150,7 @@ fun NoteCard(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
-                        onClick = onToggleStar,
+                        onClick = onStarClick,
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
@@ -163,7 +162,7 @@ fun NoteCard(
                     }
 
                     IconButton(
-                        onClick = onDelete,
+                        onClick = onDeleteClick,
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
@@ -176,27 +175,31 @@ fun NoteCard(
                 }
             }
 
-            // Rich Shared Link Hero Thumbnail (e.g. YouTube thumbnail or OpenGraph preview image)
-            if (isSharedLinkNote && imageList.isNotEmpty()) {
-                val heroUrl = imageList.first()
+            // Rich Shared Link Hero Thumbnail
+            if (uiItem.isSharedLinkNote && uiItem.imageList.isNotEmpty()) {
+                val heroUrl = uiItem.imageList.first()
+                val heroImageRequest = remember(heroUrl, performanceMode, context) {
+                    ImageRequest.Builder(context)
+                        .data(if (heroUrl.startsWith("http")) heroUrl else File(heroUrl))
+                        .crossfade(!performanceMode)
+                        .build()
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(140.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(HeroImageShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 ) {
                     AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(if (heroUrl.startsWith("http")) heroUrl else File(heroUrl))
-                            .crossfade(!performanceMode)
-                            .build(),
+                        model = heroImageRequest,
                         contentDescription = "Link thumbnail preview",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
 
-                    if (tagsList.contains("video")) {
+                    if (uiItem.tagsList.contains("video")) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -214,46 +217,28 @@ fun NoteCard(
                 }
             }
 
-            // Note Content Snippet
-            if (note.content.isNotBlank()) {
-                val cleanPreview = remember(note.content, isSharedLinkNote, performanceMode) {
-                    var text = note.content
-                    if (isSharedLinkNote) {
-                        val firstHttp = text.indexOf("http")
-                        if (firstHttp != -1) {
-                            val endOfLine = text.indexOf('\n', firstHttp)
-                            text = if (endOfLine != -1) {
-                                text.substring(0, firstHttp) + text.substring(endOfLine + 1)
-                            } else {
-                                text.substring(0, firstHttp)
-                            }
-                        }
-                    }
-                    val snippet = if (text.length > 280) text.substring(0, 280) else text
-                    if (performanceMode) snippet.trim() else CLEAN_MARKDOWN_REGEX.replace(snippet, "").trim()
-                }
-                if (cleanPreview.isNotBlank()) {
-                    Text(
-                        text = cleanPreview,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 20.sp
-                        ),
-                        maxLines = if (isSharedLinkNote && imageList.isNotEmpty()) 2 else 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+            // Note Content Snippet (Pre-computed in ViewModel)
+            if (uiItem.cleanPreview.isNotBlank()) {
+                Text(
+                    text = uiItem.cleanPreview,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    ),
+                    maxLines = if (uiItem.isSharedLinkNote && uiItem.imageList.isNotEmpty()) 2 else 3,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
-            // Standard Note Image Thumbnails (for non-shared-link notes)
-            if (!isSharedLinkNote && imageList.isNotEmpty()) {
+            // Standard Note Image Thumbnails
+            if (!uiItem.isSharedLinkNote && uiItem.imageList.isNotEmpty()) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val displayedImages = remember(imageList) { imageList.take(3) }
+                    val displayedImages = remember(uiItem.imageList) { uiItem.imageList.take(3) }
                     displayedImages.forEach { imgPath ->
-                        val imageRequest = remember(imgPath) {
+                        val imageRequest = remember(imgPath, context) {
                             val model = if (imgPath.startsWith("http")) imgPath else File(imgPath)
                             ImageRequest.Builder(context)
                                 .data(model)
@@ -264,7 +249,7 @@ fun NoteCard(
                         Box(
                             modifier = Modifier
                                 .size(56.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(ThumbnailShape)
                         ) {
                             AsyncImage(
                                 model = imageRequest,
@@ -275,15 +260,15 @@ fun NoteCard(
                         }
                     }
 
-                    if (imageList.size > 3) {
+                    if (uiItem.imageList.size > 3) {
                         Surface(
-                            shape = RoundedCornerShape(10.dp),
+                            shape = ThumbnailShape,
                             color = MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier.size(56.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = "+${imageList.size - 3}",
+                                    text = "+${uiItem.imageList.size - 3}",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -295,13 +280,13 @@ fun NoteCard(
             }
 
             // Clickable URL Pill for Shared Links
-            if (extractedUrl != null) {
+            if (uiItem.extractedUrl != null && uiItem.displayUrl != null) {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = UrlPillShape,
                     color = Color(0xFF2563EB).copy(alpha = 0.12f),
                     modifier = Modifier.clickable {
                         try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(extractedUrl))
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uiItem.extractedUrl))
                             context.startActivity(intent)
                         } catch (_: Exception) {}
                     }
@@ -318,7 +303,7 @@ fun NoteCard(
                             modifier = Modifier.size(15.dp)
                         )
                         Text(
-                            text = extractedUrl.removePrefix("https://").removePrefix("http://").take(42),
+                            text = uiItem.displayUrl,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFF1D4ED8),
@@ -335,20 +320,20 @@ fun NoteCard(
                 }
             }
 
-            // Tags (Single-pass row layout to keep scrolling locked at 60 FPS)
-            if (tagsList.isNotEmpty()) {
+            // Tags (Single-pass row layout to keep scrolling locked at 120 FPS)
+            if (uiItem.tagsList.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val displayedTags = remember(tagsList) { tagsList.take(3) }
+                    val displayedTags = remember(uiItem.tagsList) { uiItem.tagsList.take(3) }
                     displayedTags.forEach { tag ->
                         TagChip(tag = tag)
                     }
-                    if (tagsList.size > 3) {
+                    if (uiItem.tagsList.size > 3) {
                         Text(
-                            text = "+${tagsList.size - 3}",
+                            text = "+${uiItem.tagsList.size - 3}",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
@@ -358,19 +343,19 @@ fun NoteCard(
                 }
             }
 
-            // Footer: Date
+            // Footer: Date (Pre-formatted)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = AppDateFormatter.format(note.updatedAt),
+                    text = uiItem.formattedDate,
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
 
-                if (imageList.isNotEmpty()) {
+                if (uiItem.imageList.isNotEmpty()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.Image,
@@ -380,7 +365,7 @@ fun NoteCard(
                         )
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
-                            text = "${imageList.size}",
+                            text = "${uiItem.imageList.size}",
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
@@ -389,4 +374,81 @@ fun NoteCard(
             }
         }
     }
+}
+
+/**
+ * Backward-compatible overload for NoteCard directly taking [NoteEntity].
+ * Wraps local computations in remember blocks to protect scrolling performance.
+ */
+@Composable
+fun NoteCard(
+    note: NoteEntity,
+    onClick: () -> Unit,
+    onToggleStar: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+    performanceMode: Boolean = false
+) {
+    val isSharedLink = note.folderId == FolderEntity.SHARED_LINKS_FOLDER_ID
+    val imageList = remember(note.imageUris) {
+        if (note.imageUris.isBlank()) emptyList()
+        else note.imageUris.split(",").map { it.trim() }.filter { it.isNotBlank() }
+    }
+    val tagsList = remember(note.tags) {
+        if (note.tags.isBlank()) emptyList()
+        else note.tags.split(",").map { it.trim() }.filter { it.isNotBlank() }
+    }
+    val extractedUrl = remember(note.content, isSharedLink, tagsList) {
+        if (isSharedLink || tagsList.contains("link")) {
+            note.content.lineSequence().firstOrNull { it.trimStart().startsWith("http://") || it.trimStart().startsWith("https://") }?.trim()
+        } else null
+    }
+    val displayUrl = remember(extractedUrl) {
+        extractedUrl?.removePrefix("https://")?.removePrefix("http://")?.take(42)
+    }
+    val displayTitle = remember(note.title, isSharedLink) {
+        note.title.ifBlank { if (isSharedLink) "Shared Link" else "Untitled Note" }
+    }
+    val cleanPreview = remember(note.content, isSharedLink, performanceMode) {
+        if (note.content.isBlank()) ""
+        else {
+            var text = note.content
+            if (isSharedLink) {
+                val firstHttp = text.indexOf("http")
+                if (firstHttp != -1) {
+                    val endOfLine = text.indexOf('\n', firstHttp)
+                    text = if (endOfLine != -1) text.substring(0, firstHttp) + text.substring(endOfLine + 1)
+                    else text.substring(0, firstHttp)
+                }
+            }
+            val snippet = if (text.length > 280) text.substring(0, 280) else text
+            if (performanceMode) snippet.trim() else CLEAN_MARKDOWN_REGEX.replace(snippet, "").trim()
+        }
+    }
+    val formattedDate = remember(note.updatedAt) {
+        AppDateFormatter.format(note.updatedAt)
+    }
+
+    val uiItem = remember(note, displayTitle, formattedDate, cleanPreview, imageList, tagsList, extractedUrl, displayUrl, isSharedLink) {
+        NoteUiItem(
+            note = note,
+            displayTitle = displayTitle,
+            formattedDate = formattedDate,
+            cleanPreview = cleanPreview,
+            imageList = imageList,
+            tagsList = tagsList,
+            extractedUrl = extractedUrl,
+            displayUrl = displayUrl,
+            isSharedLinkNote = isSharedLink
+        )
+    }
+
+    NoteCard(
+        uiItem = uiItem,
+        onClick = { onClick() },
+        onToggleStar = { onToggleStar() },
+        onDelete = { onDelete() },
+        modifier = modifier,
+        performanceMode = performanceMode
+    )
 }

@@ -22,6 +22,10 @@ import com.example.reminder.ReminderManager
 import com.example.ui.components.SearchFilter
 import com.example.widget.NotesTasksAppWidget
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import androidx.compose.ui.graphics.Color
+import com.example.ui.components.AppDateFormatter
+import com.example.ui.model.NoteUiItem
+import com.example.ui.model.TaskUiItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +34,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -142,17 +147,20 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
         val map = notes.groupBy { it.folderId }.mapValues { it.value.size }.toMutableMap()
         map[FolderEntity.SHARED_LINKS_FOLDER_ID] = notes.count { it.folderId == FolderEntity.SHARED_LINKS_FOLDER_ID }
         map
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    }.flowOn(Dispatchers.Default)
+     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val folderTasksCountMap: StateFlow<Map<Long?, Int>> = repository.allTasks.map { tasks ->
         val map = tasks.groupBy { it.task.folderId }.mapValues { it.value.size }.toMutableMap()
         map[FolderEntity.COMPLETED_TASKS_FOLDER_ID] = tasks.count { it.task.isCompleted }
         map
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    }.flowOn(Dispatchers.Default)
+     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val subfoldersMap: StateFlow<Map<Long?, List<FolderEntity>>> = allFolders.map { folders ->
         folders.filter { it.parentFolderId != null }.groupBy { it.parentFolderId }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    }.flowOn(Dispatchers.Default)
+     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     private val _selectedFolder = MutableStateFlow<FolderEntity?>(null)
     val selectedFolder: StateFlow<FolderEntity?> = _selectedFolder.asStateFlow()
@@ -180,7 +188,8 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
         } else {
             folders.filter { it.parentFolderId == selected.id }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default)
+     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val noteFolders: StateFlow<List<FolderEntity>> = allFolders.map { list ->
         list.filter { it.folderType == "NOTE" }
@@ -284,7 +293,8 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
             SearchFilter.STARRED -> tagFiltered.filter { it.isStarred }
             else -> emptyList()
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default)
+     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Filtered Tasks (Fast in-memory filtering, zero stutter)
     val tasksList: StateFlow<List<TaskWithSubtasks>> = combine(
@@ -324,7 +334,22 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
             SearchFilter.REMINDERS -> tagFiltered.filter { it.hasReminders }
             else -> emptyList()
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default)
+     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // 120Hz Ultra-Fluid Pre-Computed UI Models (Offloaded to Dispatchers.Default)
+    val noteUiItems: StateFlow<List<NoteUiItem>> = combine(
+        notesList,
+        _performanceMode
+    ) { notes, perfMode ->
+        notes.map { it.toUiItem(perfMode) }
+    }.flowOn(Dispatchers.Default)
+     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val taskUiItems: StateFlow<List<TaskUiItem>> = tasksList.map { tasks ->
+        tasks.map { it.toUiItem() }
+    }.flowOn(Dispatchers.Default)
+     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Direct access for widget / notification deep links
     suspend fun getNoteDirect(id: Long): NoteEntity? = repository.getNoteDirect(id)
@@ -717,4 +742,94 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
     }
+}
+
+private val CLEAN_MARKDOWN_REGEX = Regex("[#*`_~>\\[\\]]")
+private val HighPriorityColor = Color(0xFFDC2626)
+private val MediumPriorityColor = Color(0xFFD97706)
+private val LowPriorityColor = Color(0xFF3B82F6)
+
+private fun NoteEntity.toUiItem(isPerformanceMode: Boolean): NoteUiItem {
+    val isSharedLink = folderId == FolderEntity.SHARED_LINKS_FOLDER_ID
+    val images = if (imageUris.isBlank()) emptyList()
+    else imageUris.split(",").map { it.trim() }.filter { it.isNotBlank() }
+
+    val tagList = if (tags.isBlank()) emptyList()
+    else tags.split(",").map { it.trim() }.filter { it.isNotBlank() }
+
+    var url: String? = null
+    if (isSharedLink || tagList.contains("link")) {
+        url = content.lineSequence().firstOrNull { line ->
+            val trimmed = line.trim()
+            trimmed.startsWith("http://") || trimmed.startsWith("https://")
+        }?.trim()
+    }
+
+    val displayUrl = url?.let {
+        it.removePrefix("https://").removePrefix("http://").take(42)
+    }
+
+    val displayTitle = title.ifBlank { if (isSharedLink) "Shared Link" else "Untitled Note" }
+
+    val cleanPreview = if (content.isNotBlank()) {
+        var text = content
+        if (isSharedLink && url != null) {
+            val firstHttp = text.indexOf("http")
+            if (firstHttp != -1) {
+                val endOfLine = text.indexOf('\n', firstHttp)
+                text = if (endOfLine != -1) {
+                    text.substring(0, firstHttp) + text.substring(endOfLine + 1)
+                } else {
+                    text.substring(0, firstHttp)
+                }
+            }
+        }
+        val snippet = if (text.length > 280) text.substring(0, 280) else text
+        if (isPerformanceMode) snippet.trim() else CLEAN_MARKDOWN_REGEX.replace(snippet, "").trim()
+    } else ""
+
+    val formattedDate = AppDateFormatter.format(updatedAt)
+
+    return NoteUiItem(
+        note = this,
+        displayTitle = displayTitle,
+        formattedDate = formattedDate,
+        cleanPreview = cleanPreview,
+        imageList = images,
+        tagsList = tagList,
+        extractedUrl = url,
+        displayUrl = displayUrl,
+        isSharedLinkNote = isSharedLink
+    )
+}
+
+private fun TaskWithSubtasks.toUiItem(): TaskUiItem {
+    val reminderStr = if (task.reminderEnabled && task.reminderTime != null) {
+        AppDateFormatter.format(task.reminderTime)
+    } else null
+
+    val dueStr = if (task.dueDate != null && (task.reminderTime == null || task.dueDate != task.reminderTime)) {
+        "Due: ${AppDateFormatter.format(task.dueDate)}"
+    } else null
+
+    val (pText, pColor) = when (task.priority) {
+        2 -> "High" to HighPriorityColor
+        0 -> "Low" to LowPriorityColor
+        else -> "Medium" to MediumPriorityColor
+    }
+
+    val completedCount = completedSubtaskCount
+    val totalCount = totalSubtaskCount
+    val summary = "$completedCount/$totalCount subtasks"
+    val progress = subtaskProgress
+
+    return TaskUiItem(
+        taskWithSubtasks = this,
+        formattedReminder = reminderStr,
+        formattedDueDate = dueStr,
+        priorityText = pText,
+        priorityColor = pColor,
+        subtaskSummary = summary,
+        subtaskProgress = progress
+    )
 }

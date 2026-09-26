@@ -1,10 +1,8 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,43 +38,70 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.SubTaskEntity
 import com.example.data.model.TaskWithSubtasks
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.example.ui.model.TaskUiItem
 
+// Top-level static constants to prevent object allocations during 120Hz fast scrolling
+private val TaskCardShape = RoundedCornerShape(18.dp)
+private val CompletedBadgeShape = RoundedCornerShape(6.dp)
+private val BadgeShape = RoundedCornerShape(8.dp)
+
+private val HighPriorityColor = Color(0xFFDC2626)
+private val MediumPriorityColor = Color(0xFFD97706)
+private val LowPriorityColor = Color(0xFF3B82F6)
+
+/**
+ * 120Hz Smooth Scrolling Optimized TaskCard.
+ * Uses pre-computed [TaskUiItem] where date formatting, priority styling,
+ * and subtask metrics are pre-calculated.
+ */
 @Composable
 fun TaskCard(
-    taskWithSubtasks: TaskWithSubtasks,
-    onClick: () -> Unit,
-    onToggleCompleted: (Boolean) -> Unit,
-    onToggleStar: () -> Unit,
-    onToggleSubtask: (SubTaskEntity, Boolean) -> Unit,
-    onDelete: () -> Unit,
+    uiItem: TaskUiItem,
+    onClick: (TaskWithSubtasks) -> Unit,
+    onToggleCompleted: (Long, Boolean) -> Unit,
+    onToggleStar: (TaskWithSubtasks) -> Unit,
+    onToggleSubtask: (Long, Boolean) -> Unit,
+    onDelete: (Long) -> Unit,
     modifier: Modifier = Modifier,
     performanceMode: Boolean = false
 ) {
+    val taskWithSubtasks = uiItem.taskWithSubtasks
     val task = taskWithSubtasks.task
     val isDark = isSystemInDarkTheme()
 
-    // Vibrant green card when completed
-    val cardBg = if (task.isCompleted) {
-        if (isDark) Color(0xFF0E2819) else Color(0xFFEAF8EE)
-    } else {
-        MaterialTheme.colorScheme.surface
+    val cardBg = remember(task.isCompleted, isDark) {
+        if (task.isCompleted) {
+            if (isDark) Color(0xFF0E2819) else Color(0xFFEAF8EE)
+        } else {
+            Color.Unspecified
+        }
     }
-    val cardBorder = if (task.isCompleted) {
-        BorderStroke(1.5.dp, if (isDark) Color(0xFF1E5434) else Color(0xFF86EFAC))
-    } else {
-        BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+    val effectiveContainerColor = if (cardBg != Color.Unspecified) cardBg else MaterialTheme.colorScheme.surface
+
+    val outlineColor = MaterialTheme.colorScheme.outline
+    val cardBorder = remember(task.isCompleted, isDark, outlineColor) {
+        if (task.isCompleted) {
+            BorderStroke(1.5.dp, if (isDark) Color(0xFF1E5434) else Color(0xFF86EFAC))
+        } else {
+            BorderStroke(1.dp, outlineColor.copy(alpha = 0.2f))
+        }
+    }
+
+    val onCardClick = remember(onClick, taskWithSubtasks) { { onClick(taskWithSubtasks) } }
+    val onCompletionClick = remember(onToggleCompleted, task.id, task.isCompleted) {
+        { onToggleCompleted(task.id, !task.isCompleted) }
+    }
+    val onStarClick = remember(onToggleStar, taskWithSubtasks) { { onToggleStar(taskWithSubtasks) } }
+    val onDeleteClick = remember(onDelete, task.id) { { onDelete(task.id) } }
+    val onSubtaskToggle: (SubTaskEntity, Boolean) -> Unit = remember(onToggleSubtask) {
+        { subtask, isDone -> onToggleSubtask(subtask.id, isDone) }
     }
 
     Card(
-        onClick = onClick,
+        onClick = onCardClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = cardBg
-        ),
+        shape = TaskCardShape,
+        colors = CardDefaults.cardColors(containerColor = effectiveContainerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = cardBorder
     ) {
@@ -93,7 +117,7 @@ fun TaskCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = { onToggleCompleted(!task.isCompleted) },
+                    onClick = onCompletionClick,
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
@@ -125,7 +149,7 @@ fun TaskCard(
                         if (task.isCompleted) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
+                                shape = CompletedBadgeShape,
                                 color = if (isDark) Color(0xFF173E26) else Color(0xFFD1FAE5)
                             ) {
                                 Text(
@@ -154,7 +178,7 @@ fun TaskCard(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
-                        onClick = onToggleStar,
+                        onClick = onStarClick,
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
@@ -166,7 +190,7 @@ fun TaskCard(
                     }
 
                     IconButton(
-                        onClick = onDelete,
+                        onClick = onDeleteClick,
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
@@ -186,28 +210,23 @@ fun TaskCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Priority Badge
-                val (priorityColor, priorityText) = when (task.priority) {
-                    2 -> Color(0xFFDC2626) to "High"
-                    0 -> Color(0xFF3B82F6) to "Low"
-                    else -> Color(0xFFD97706) to "Medium"
-                }
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = priorityColor.copy(alpha = 0.14f)
+                    shape = BadgeShape,
+                    color = uiItem.priorityColor.copy(alpha = 0.14f)
                 ) {
                     Text(
-                        text = priorityText,
+                        text = uiItem.priorityText,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = priorityColor,
+                        color = uiItem.priorityColor,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
 
-                // Reminder Badge
-                if (task.reminderEnabled && task.reminderTime != null) {
+                // Reminder Badge (Pre-formatted)
+                if (uiItem.formattedReminder != null) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = BadgeShape,
                         color = Color(0xFFFEF3C7)
                     ) {
                         Row(
@@ -222,7 +241,7 @@ fun TaskCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = AppDateFormatter.format(task.reminderTime),
+                                text = uiItem.formattedReminder,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF78350F)
@@ -231,14 +250,14 @@ fun TaskCard(
                     }
                 }
 
-                // Due Date Badge (if separate)
-                if (task.dueDate != null && (task.reminderTime == null || task.dueDate != task.reminderTime)) {
+                // Due Date Badge (Pre-formatted)
+                if (uiItem.formattedDueDate != null) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = BadgeShape,
                         color = MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         Text(
-                            text = "Due: ${AppDateFormatter.format(task.dueDate)}",
+                            text = uiItem.formattedDueDate,
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -251,9 +270,71 @@ fun TaskCard(
             if (taskWithSubtasks.subtasks.isNotEmpty()) {
                 TaskCardSubtaskViewer(
                     subtasks = taskWithSubtasks.subtasks,
-                    onToggleSubtask = onToggleSubtask
+                    onToggleSubtask = onSubtaskToggle
                 )
             }
         }
     }
+}
+
+/**
+ * Backward-compatible overload for TaskCard directly taking [TaskWithSubtasks].
+ */
+@Composable
+fun TaskCard(
+    taskWithSubtasks: TaskWithSubtasks,
+    onClick: () -> Unit,
+    onToggleCompleted: (Boolean) -> Unit,
+    onToggleStar: () -> Unit,
+    onToggleSubtask: (SubTaskEntity, Boolean) -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+    performanceMode: Boolean = false
+) {
+    val task = taskWithSubtasks.task
+    val reminderStr = remember(task.reminderEnabled, task.reminderTime) {
+        if (task.reminderEnabled && task.reminderTime != null) {
+            AppDateFormatter.format(task.reminderTime)
+        } else null
+    }
+
+    val dueStr = remember(task.dueDate, task.reminderTime) {
+        if (task.dueDate != null && (task.reminderTime == null || task.dueDate != task.reminderTime)) {
+            "Due: ${AppDateFormatter.format(task.dueDate)}"
+        } else null
+    }
+
+    val (pText, pColor) = remember(task.priority) {
+        when (task.priority) {
+            2 -> "High" to HighPriorityColor
+            0 -> "Low" to LowPriorityColor
+            else -> "Medium" to MediumPriorityColor
+        }
+    }
+
+    val uiItem = remember(taskWithSubtasks, reminderStr, dueStr, pText, pColor) {
+        TaskUiItem(
+            taskWithSubtasks = taskWithSubtasks,
+            formattedReminder = reminderStr,
+            formattedDueDate = dueStr,
+            priorityText = pText,
+            priorityColor = pColor,
+            subtaskSummary = "${taskWithSubtasks.completedSubtaskCount}/${taskWithSubtasks.totalSubtaskCount} subtasks",
+            subtaskProgress = taskWithSubtasks.subtaskProgress
+        )
+    }
+
+    TaskCard(
+        uiItem = uiItem,
+        onClick = { onClick() },
+        onToggleCompleted = { _, isDone -> onToggleCompleted(isDone) },
+        onToggleStar = { onToggleStar() },
+        onToggleSubtask = { id, isDone ->
+            val subtask = taskWithSubtasks.subtasks.find { it.id == id }
+            if (subtask != null) onToggleSubtask(subtask, isDone)
+        },
+        onDelete = { onDelete() },
+        modifier = modifier,
+        performanceMode = performanceMode
+    )
 }

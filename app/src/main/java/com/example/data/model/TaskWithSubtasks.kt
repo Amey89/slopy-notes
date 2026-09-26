@@ -1,8 +1,10 @@
 package com.example.data.model
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Embedded
 import androidx.room.Relation
 
+@Immutable
 data class TaskWithSubtasks(
     @Embedded
     val task: TaskEntity,

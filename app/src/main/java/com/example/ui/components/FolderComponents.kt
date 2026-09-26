@@ -157,6 +157,11 @@ fun FolderBreadcrumbBar(
     }
 }
 
+private val FolderCardShape = RoundedCornerShape(16.dp)
+private val FolderIconShape = RoundedCornerShape(10.dp)
+private val FolderBadgeShape = RoundedCornerShape(6.dp)
+private val SubfolderPillShape = RoundedCornerShape(8.dp)
+
 @Composable
 fun FolderCard(
     folder: FolderEntity,
@@ -174,26 +179,34 @@ fun FolderCard(
     val isSharedLinksFolder = folder.id == FolderEntity.SHARED_LINKS_FOLDER_ID
     val isSystemFolder = isCompletedArchive || isSharedLinksFolder
     var menuExpanded by remember { mutableStateOf(false) }
-    val folderColor = when {
-        isCompletedArchive -> Color(0xFF10B981)
-        isSharedLinksFolder -> Color(0xFF2563EB)
-        else -> FolderColors.getOrElse(folder.colorIndex) { MaterialTheme.colorScheme.primary }
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val folderColor = remember(isCompletedArchive, isSharedLinksFolder, folder.colorIndex, primaryColor) {
+        when {
+            isCompletedArchive -> Color(0xFF10B981)
+            isSharedLinksFolder -> Color(0xFF2563EB)
+            else -> FolderColors.getOrElse(folder.colorIndex) { primaryColor }
+        }
     }
     val isTaskFolder = folder.folderType == "TASK" || isCompletedArchive
+
+    val outlineVariantColor = MaterialTheme.colorScheme.outlineVariant
+    val cardBorder = remember(isCompletedArchive, isSharedLinksFolder, outlineVariantColor) {
+        when {
+            isCompletedArchive -> BorderStroke(1.5.dp, Color(0xFF10B981).copy(alpha = 0.6f))
+            isSharedLinksFolder -> BorderStroke(1.5.dp, Color(0xFF2563EB).copy(alpha = 0.6f))
+            else -> BorderStroke(1.dp, outlineVariantColor.copy(alpha = 0.5f))
+        }
+    }
 
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = FolderCardShape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = when {
-            isCompletedArchive -> BorderStroke(1.5.dp, Color(0xFF10B981).copy(alpha = 0.6f))
-            isSharedLinksFolder -> BorderStroke(1.5.dp, Color(0xFF2563EB).copy(alpha = 0.6f))
-            else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        }
+        border = cardBorder
     ) {
         Column(
             modifier = Modifier
