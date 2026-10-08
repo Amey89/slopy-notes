@@ -27,8 +27,8 @@ export class GoogleDriveService {
   }
 
   async findBackupFile(): Promise<string | null> {
-    const q = `name = '\${FILENAME}' and trashed = false and spaces = 'appDataFolder'`;
-    const response = await fetch(`\${GOOGLE_DRIVE_API_URL}?q=\${encodeURIComponent(q)}&spaces=appDataFolder`, {
+    const q = `name = '\${FILENAME}' and trashed = false `;
+    const response = await fetch(`\${GOOGLE_DRIVE_API_URL}?q=\${encodeURIComponent(q)}`, {
       method: "GET",
       headers: this.headers,
     });
@@ -71,7 +71,7 @@ export class GoogleDriveService {
     const metadata = {
       name: FILENAME,
       mimeType: 'application/json',
-      parents: existingFileId ? undefined : ['appDataFolder']
+      parents: undefined
     };
 
     const multipartRequestBody =
