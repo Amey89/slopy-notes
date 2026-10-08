@@ -73,13 +73,13 @@ export default function NoteEditor({ note, onClose, folderId }: NoteEditorProps)
             <div className="flex items-center space-x-2">
               <button 
                 onClick={() => setIsPreview(false)}
-                className={\`px-3 py-1.5 rounded-md text-sm font-medium transition-colors \${!isPreview ? 'bg-white shadow-sm text-brand' : 'text-slate-500 hover:text-slate-800'}\`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors \${!isPreview ? 'bg-white shadow-sm text-brand' : 'text-slate-500 hover:text-slate-800'}`}
               >
                 Edit
               </button>
               <button 
                 onClick={() => setIsPreview(true)}
-                className={\`px-3 py-1.5 rounded-md text-sm font-medium transition-colors \${isPreview ? 'bg-white shadow-sm text-brand' : 'text-slate-500 hover:text-slate-800'}\`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors \${isPreview ? 'bg-white shadow-sm text-brand' : 'text-slate-500 hover:text-slate-800'}`}
               >
                 Preview
               </button>
@@ -141,7 +141,7 @@ export default function NoteEditor({ note, onClose, folderId }: NoteEditorProps)
                 <button
                   key={c}
                   onClick={() => setColor(c)}
-                  className={\`w-8 h-8 rounded-full transition-transform \${color === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-110'}\`}
+                  className={`w-8 h-8 rounded-full transition-transform \${color === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-110'}`}
                   style={{ backgroundColor: c }}
                   title={c}
                 />

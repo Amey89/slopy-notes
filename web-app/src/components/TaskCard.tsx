@@ -32,7 +32,7 @@ export default function TaskCard({ task, onClick }: TaskCardProps) {
   return (
     <div 
       onClick={onClick}
-      className={\`bg-white rounded-xl p-4 shadow-sm border \${task.isCompleted ? 'border-slate-100 opacity-75' : 'border-slate-200'} hover:shadow-md transition-all cursor-pointer flex items-start space-x-4\`}
+      className={`bg-white rounded-xl p-4 shadow-sm border \${task.isCompleted ? 'border-slate-100 opacity-75' : 'border-slate-200'} hover:shadow-md transition-all cursor-pointer flex items-start space-x-4`}
     >
       <button onClick={toggleComplete} className="mt-1 flex-shrink-0 focus:outline-none">
         {task.isCompleted ? (
@@ -43,7 +43,7 @@ export default function TaskCard({ task, onClick }: TaskCardProps) {
       </button>
       
       <div className="flex-1 min-w-0">
-        <h3 className={\`font-medium text-base truncate \${task.isCompleted ? 'text-slate-400 line-through' : 'text-slate-800'}\`}>
+        <h3 className={`font-medium text-base truncate \${task.isCompleted ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
           {task.title || 'Untitled Task'}
         </h3>
         {task.description && (
@@ -53,11 +53,11 @@ export default function TaskCard({ task, onClick }: TaskCardProps) {
         )}
         
         <div className="flex items-center space-x-3 mt-3 text-xs">
-          <span className={\`px-2 py-1 rounded-md font-medium \${getPriorityColor(task.priority)}\`}>
+          <span className={`px-2 py-1 rounded-md font-medium \${getPriorityColor(task.priority)}`}>
             {task.priority}
           </span>
           {task.dueDate > 0 && (
-            <span className={\`flex items-center \${task.dueDate < Date.now() && !task.isCompleted ? 'text-red-500' : 'text-slate-500'}\`}>
+            <span className={`flex items-center \${task.dueDate < Date.now() && !task.isCompleted ? 'text-red-500' : 'text-slate-500'}`}>
               <Calendar className="w-3.5 h-3.5 mr-1" />
               {new Date(task.dueDate).toLocaleDateString()}
             </span>

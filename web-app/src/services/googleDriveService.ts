@@ -22,13 +22,13 @@ export class GoogleDriveService {
   private get headers() {
     if (!this.accessToken) throw new Error("Not authenticated");
     return {
-      Authorization: \`Bearer \${this.accessToken}\`,
+      Authorization: `Bearer \${this.accessToken}`,
     };
   }
 
   async findBackupFile(): Promise<string | null> {
-    const q = \`name = '\${FILENAME}' and trashed = false and spaces = 'appDataFolder'\`;
-    const response = await fetch(\`\${GOOGLE_DRIVE_API_URL}?q=\${encodeURIComponent(q)}&spaces=appDataFolder\`, {
+    const q = `name = '\${FILENAME}' and trashed = false and spaces = 'appDataFolder'`;
+    const response = await fetch(`\${GOOGLE_DRIVE_API_URL}?q=\${encodeURIComponent(q)}&spaces=appDataFolder`, {
       method: "GET",
       headers: this.headers,
     });
@@ -48,7 +48,7 @@ export class GoogleDriveService {
   }
 
   async downloadBackup(fileId: string): Promise<BackupPayload> {
-    const response = await fetch(\`\${GOOGLE_DRIVE_API_URL}/\${fileId}?alt=media\`, {
+    const response = await fetch(`\${GOOGLE_DRIVE_API_URL}/\${fileId}?alt=media`, {
       method: "GET",
       headers: this.headers,
     });
@@ -65,8 +65,8 @@ export class GoogleDriveService {
 
   async uploadBackup(payload: BackupPayload, existingFileId: string | null): Promise<void> {
     const boundary = '-------314159265358979323846';
-    const delimiter = \`\\r\\n--\${boundary}\\r\\n\`;
-    const close_delim = \`\\r\\n--\${boundary}--\\r\\n\`;
+    const delimiter = `\\r\\n--\${boundary}\\r\\n`;
+    const close_delim = `\\r\\n--\${boundary}--\\r\\n`;
 
     const metadata = {
       name: FILENAME,
@@ -84,14 +84,14 @@ export class GoogleDriveService {
       close_delim;
 
     const url = existingFileId 
-      ? \`\${UPLOAD_API_URL}/\${existingFileId}?uploadType=multipart\`
-      : \`\${UPLOAD_API_URL}?uploadType=multipart\`;
+      ? `\${UPLOAD_API_URL}/\${existingFileId}?uploadType=multipart`
+      : `\${UPLOAD_API_URL}?uploadType=multipart`;
 
     const response = await fetch(url, {
       method: existingFileId ? 'PATCH' : 'POST',
       headers: {
         ...this.headers,
-        'Content-Type': \`multipart/related; boundary=\${boundary}\`
+        'Content-Type': `multipart/related; boundary=\${boundary}`
       },
       body: multipartRequestBody
     });
@@ -100,7 +100,7 @@ export class GoogleDriveService {
         if (response.status === 401) {
           this.clearToken();
         }
-      throw new Error(\`Failed to upload backup: \${response.statusText}\`);
+      throw new Error(`Failed to upload backup: \${response.statusText}`);
     }
   }
 }
