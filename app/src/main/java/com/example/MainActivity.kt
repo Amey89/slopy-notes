@@ -116,8 +116,9 @@ fun MainAppNav(
         }
     }
 
-    // System Back gesture & back button navigation
-    BackHandler(enabled = currentScreen != Screen.Home) {
+    // System Back gesture & back button navigation for Settings
+    // (NoteEditScreen and TaskEditScreen manage their own auto-saving BackHandler)
+    BackHandler(enabled = currentScreen is Screen.Settings) {
         currentScreen = Screen.Home
     }
 

@@ -173,12 +173,41 @@ fun NoteEditScreen(
         noteFolders.filter { selectedFolderIds.contains(it.id) }
     }
 
+    // Auto-save logic on back gesture, back button, or save button
+    val performAutoSaveAndExit = {
+        val trimmedTitle = title.trim()
+        val trimmedContent = content.text.trim()
+        val hasContent = trimmedTitle.isNotBlank() || trimmedContent.isNotBlank() || imagePaths.isNotEmpty() || tags.isNotEmpty()
+
+        if (hasContent || initialNote != null) {
+            val finalTitle = if (trimmedTitle.isNotBlank()) {
+                trimmedTitle
+            } else if (trimmedContent.isNotBlank()) {
+                trimmedContent.lineSequence().firstOrNull { it.isNotBlank() }?.take(40)?.trim() ?: "Untitled Note"
+            } else {
+                "Untitled Note"
+            }
+
+            onSave(
+                finalTitle,
+                trimmedContent,
+                tags.joinToString(","),
+                imagePaths.joinToString(","),
+                colorIndex,
+                isStarred,
+                selectedFolderIds.toList()
+            )
+        } else {
+            onDismiss()
+        }
+    }
+
     // Android back button & gesture support
     BackHandler {
         if (activeToolSection != NoteToolSection.NONE) {
             activeToolSection = NoteToolSection.NONE
         } else {
-            onDismiss()
+            performAutoSaveAndExit()
         }
     }
 
@@ -207,7 +236,13 @@ fun NoteEditScreen(
                 },
                 navigationIcon = {
                     IconButton(
-                        onClick = onDismiss,
+                        onClick = {
+                            if (activeToolSection != NoteToolSection.NONE) {
+                                activeToolSection = NoteToolSection.NONE
+                            } else {
+                                performAutoSaveAndExit()
+                            }
+                        },
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
@@ -247,16 +282,7 @@ fun NoteEditScreen(
                     // Large comfortable Save Button
                     Button(
                         onClick = {
-                            val finalContent = content.text.trim()
-                            onSave(
-                                title.trim(),
-                                finalContent,
-                                tags.joinToString(","),
-                                imagePaths.joinToString(","),
-                                colorIndex,
-                                isStarred,
-                                selectedFolderIds.toList()
-                            )
+                            performAutoSaveAndExit()
                         },
                         modifier = Modifier
                             .height(44.dp)

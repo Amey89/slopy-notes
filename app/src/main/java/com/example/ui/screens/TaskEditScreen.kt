@@ -143,9 +143,42 @@ fun TaskEditScreen(
 
     val dateTimeFormatter = remember { SimpleDateFormat("EEE, MMM d, yyyy 'at' h:mm a", Locale.getDefault()) }
 
+    // Auto-save logic on back gesture, back button, or save button
+    val performAutoSaveAndExit = {
+        val trimmedTitle = title.trim()
+        val trimmedDesc = description.trim()
+        val hasContent = trimmedTitle.isNotBlank() || trimmedDesc.isNotBlank() || subtasks.isNotEmpty()
+
+        if (hasContent || initialTaskWithSubtasks != null) {
+            val finalTitle = if (trimmedTitle.isNotBlank()) {
+                trimmedTitle
+            } else if (trimmedDesc.isNotBlank()) {
+                trimmedDesc.take(40)
+            } else if (subtasks.isNotEmpty()) {
+                subtasks.firstOrNull { it.title.isNotBlank() }?.title ?: "Untitled Task"
+            } else {
+                "Untitled Task"
+            }
+
+            onSave(
+                finalTitle,
+                trimmedDesc,
+                priority,
+                if (reminderEnabled) reminderTime else null,
+                if (reminderEnabled) reminderTime else null,
+                reminderEnabled,
+                isStarred,
+                subtasks,
+                selectedFolderIds.toList()
+            )
+        } else {
+            onDismiss()
+        }
+    }
+
     // Android back button & gesture support
     BackHandler {
-        onDismiss()
+        performAutoSaveAndExit()
     }
 
     if (showCreateFolderDialog) {
@@ -171,7 +204,7 @@ fun TaskEditScreen(
                 },
                 navigationIcon = {
                     IconButton(
-                        onClick = onDismiss,
+                        onClick = performAutoSaveAndExit,
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
@@ -195,26 +228,12 @@ fun TaskEditScreen(
                     }
 
                     Button(
-                        onClick = {
-                            if (title.isNotBlank()) {
-                                onSave(
-                                    title.trim(),
-                                    description.trim(),
-                                    priority,
-                                    if (reminderEnabled) reminderTime else null,
-                                    if (reminderEnabled) reminderTime else null,
-                                    reminderEnabled,
-                                    isStarred,
-                                    subtasks,
-                                    selectedFolderIds.toList()
-                                )
-                            }
-                        },
+                        onClick = performAutoSaveAndExit,
                         modifier = Modifier
                             .height(44.dp)
                             .padding(end = 8.dp),
                         shape = RoundedCornerShape(12.dp),
-                        enabled = title.isNotBlank(),
+                        enabled = title.isNotBlank() || description.isNotBlank() || subtasks.isNotEmpty(),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(
