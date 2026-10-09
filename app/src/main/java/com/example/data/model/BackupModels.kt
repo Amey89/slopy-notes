@@ -8,13 +8,22 @@ data class BackupPayload(
     val exportedAt: Long = System.currentTimeMillis(),
     val notes: List<BackupNote> = emptyList(),
     val tasks: List<BackupTask> = emptyList(),
-    val folders: List<BackupFolder> = emptyList()
+    val folders: List<BackupFolder> = emptyList(),
+    val tags: List<BackupTag> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
+data class BackupTag(
+    val name: String,
+    val colorIndex: Int = 0,
+    val createdAt: Long = System.currentTimeMillis()
 )
 
 @JsonClass(generateAdapter = true)
 data class BackupFolder(
     val id: Long = 0,
     val name: String,
+    val folderType: String = "NOTE", // "NOTE" or "TASK"
     val parentFolderId: Long? = null,
     val colorIndex: Int = 0,
     val createdAt: Long = System.currentTimeMillis()

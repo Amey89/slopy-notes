@@ -784,6 +784,48 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
     }
+
+    fun saveManualLinkWithMetadata(
+        url: String,
+        title: String,
+        description: String,
+        imageUrl: String,
+        tags: String,
+        onComplete: ((NoteEntity) -> Unit)? = null
+    ) {
+        viewModelScope.launch {
+            try {
+                val contentMarkdown = buildString {
+                    appendLine(url)
+                    if (description.isNotBlank()) {
+                        appendLine()
+                        appendLine(description)
+                    }
+                }.trim()
+
+                val note = NoteEntity(
+                    title = title.ifBlank { "Shared Link" },
+                    content = contentMarkdown,
+                    tags = tags.ifBlank { "links" },
+                    imageUris = imageUrl,
+                    isStarred = false,
+                    colorIndex = 2, // Ocean Blue
+                    folderId = FolderEntity.SHARED_LINKS_FOLDER_ID,
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis()
+                )
+
+                val noteId = repository.saveNoteWithFolders(note, listOf(FolderEntity.SHARED_LINKS_FOLDER_ID))
+                val savedNote = note.copy(id = noteId)
+                selectFolder(FolderEntity.PermanentSharedLinksFolder)
+                _shareToastEvent.tryEmit("Saved to Shared Links: ${savedNote.title}")
+                NotesTasksAppWidget.notifyWidgetUpdate(getApplication())
+                onComplete?.invoke(savedNote)
+            } catch (e: Exception) {
+                _shareToastEvent.tryEmit("Failed to save link: ${e.message}")
+            }
+        }
+    }
 }
 
 private val CLEAN_MARKDOWN_REGEX = Regex("[#*`_~>\\[\\]]")

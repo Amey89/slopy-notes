@@ -75,6 +75,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.FolderEntity
 import com.example.data.model.NoteEntity
 import com.example.data.model.TaskWithSubtasks
+import com.example.ui.components.AddLinkModalDialog
 import com.example.ui.components.CreateFolderDialog
 import com.example.ui.components.CreateTagDialog
 import com.example.ui.components.FolderBreadcrumbBar
@@ -139,6 +140,7 @@ fun HomeScreen(
 
     var showActionSheet by remember { mutableStateOf(false) }
     var showCreateTagDialog by remember { mutableStateOf(false) }
+    var showAddLinkDialog by remember { mutableStateOf(false) }
 
     // Folder Dialog States
     var showCreateFolderDialog by remember { mutableStateOf(false) }
@@ -189,6 +191,18 @@ fun HomeScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = { showAddLinkDialog = true },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Link,
+                            contentDescription = "Save Link with Metadata",
+                            tint = Color(0xFF2563EB),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
                     if (driveConnectionState is com.example.data.sync.DriveConnectionState.Connected) {
                         IconButton(
                             onClick = onOpenSettings,
@@ -551,7 +565,20 @@ fun HomeScreen(
                     }
                 )
 
-                // 3. New Folder / Subfolder
+                // 3. New Link (Metadata Extractor)
+                ActionSheetItem(
+                    icon = Icons.Default.Link,
+                    iconBgColor = Color(0xFFDBEAFE),
+                    iconTint = Color(0xFF2563EB),
+                    title = "Save Link with Metadata",
+                    subtitle = "Extract image & preview from YouTube, Insta, Web",
+                    onClick = {
+                        showActionSheet = false
+                        showAddLinkDialog = true
+                    }
+                )
+
+                // 4. New Folder / Subfolder
                 ActionSheetItem(
                     icon = Icons.Default.CreateNewFolder,
                     iconBgColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -565,7 +592,7 @@ fun HomeScreen(
                     }
                 )
 
-                // 4. New Permanent Tag
+                // 5. New Permanent Tag
                 ActionSheetItem(
                     icon = Icons.Default.LocalOffer,
                     iconBgColor = Color(0xFFFDE68A).copy(alpha = 0.5f),
@@ -581,6 +608,23 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(28.dp))
             }
         }
+    }
+
+    // Dialog: Save Link with Metadata
+    if (showAddLinkDialog) {
+        AddLinkModalDialog(
+            onDismiss = { showAddLinkDialog = false },
+            onSaveLink = { url, title, description, imageUrl, tags ->
+                viewModel.saveManualLinkWithMetadata(
+                    url = url,
+                    title = title,
+                    description = description,
+                    imageUrl = imageUrl,
+                    tags = tags
+                )
+                showAddLinkDialog = false
+            }
+        )
     }
 
     // Dialog: Create Tag

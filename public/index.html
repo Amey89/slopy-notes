@@ -842,6 +842,166 @@
       background: var(--primary-light);
     }
 
+    /* Tag badge colors & tags chips bar */
+    .tags-bar-container {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 6px 0 10px 0;
+      scrollbar-width: thin;
+      align-items: center;
+    }
+
+    .tag-chip-filter {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface-elevated);
+      color: var(--text-secondary);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .tag-chip-filter:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+    }
+
+    .tag-chip-filter.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+    }
+
+    .tag-chip-filter .tag-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .sidebar-tag-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 0.84rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .sidebar-tag-item:hover {
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+    }
+
+    .sidebar-tag-item.active {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary-light);
+      font-weight: 600;
+    }
+
+    /* Card preview images (e.g. YouTube shorts, Insta, Facebook, Pinterest thumbnails) */
+    .card-preview-image {
+      width: 100%;
+      max-height: 190px;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      margin: 8px 0;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      display: block;
+    }
+
+    .link-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    /* Live Link Metadata Preview Box in Modal */
+    .link-meta-preview {
+      display: none;
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+    }
+
+    .link-meta-preview.active {
+      display: block;
+    }
+
+    .link-meta-thumb {
+      width: 100%;
+      max-height: 140px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    .folder-type-badge {
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .folder-type-notes {
+      background: rgba(147, 51, 234, 0.2);
+      color: #c084fc;
+      border: 1px solid rgba(147, 51, 234, 0.35);
+    }
+    .folder-type-tasks {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .folder-type-both {
+      background: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.35);
+    }
+
+    /* Section Separator Headers for Notes / Tasks folder separation */
+    .section-divider-header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 4px 6px 4px;
+      margin-top: 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-divider-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     /* Responsive */
     @media (max-width: 800px) {
       .sidebar {
@@ -938,6 +1098,13 @@
       </div>
       <div id="customFoldersList"></div>
 
+      <!-- Permanent Tags Section in Sidebar -->
+      <div class="nav-label" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Tags</span>
+        <button class="btn-icon" style="font-size:0.85rem;" onclick="openCreateTagModal()" title="Add Tag">+</button>
+      </div>
+      <div id="sidebarTagsList" style="display:flex; flex-direction:column; gap:2px;"></div>
+
       <div class="nav-label">Backup & Sync</div>
       <button class="nav-item" onclick="openSyncSettingsModal()">
         <div class="nav-item-content">
@@ -997,8 +1164,14 @@
         <button class="btn btn-success" onclick="openCreateTaskModal()" title="Create New Task">
           + Task
         </button>
+        <button class="btn" style="background:#2563eb; color:#fff;" onclick="openAddLinkModal()" title="Fetch metadata and save link to Shared Links permanent folder">
+          🔗 + Links
+        </button>
         <button class="btn btn-secondary" onclick="openCreateFolderModal(null)" title="Create New Folder">
           + Folder
+        </button>
+        <button class="btn btn-secondary" onclick="openCreateTagModal()" title="Create New Tag">
+          🏷️ + Tag
         </button>
         <button class="btn btn-secondary" id="btnTopAddSubfolder" onclick="openCreateSubfolderFromCurrent()" style="display:none;" title="Create Subfolder in current folder">
           + Subfolder
@@ -1019,15 +1192,29 @@
 
       <!-- Header panel -->
       <div class="header-panel">
-        <h1 class="page-title" id="pageTitleText">
-          📑 All Items
-        </h1>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <h1 class="page-title" id="pageTitleText">
+            📑 All Items
+          </h1>
+          <div id="folderViewSeparationControl" style="display:none; align-items:center; gap:6px;">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Folder View:</span>
+            <button class="filter-chip active" id="btnFolderViewSplit" onclick="setFolderSeparationMode('split', this)" title="Separate Tasks and Notes sections">📑 Separated</button>
+            <button class="filter-chip" id="btnFolderViewCombined" onclick="setFolderSeparationMode('combined', this)" title="Show unified stream">🔀 Unified</button>
+          </div>
+        </div>
 
         <div class="view-filters" id="typeFilters">
           <button class="filter-chip active" onclick="setFilterType('all', this)">All</button>
-          <button class="filter-chip" onclick="setFilterType('notes', this)">Notes</button>
-          <button class="filter-chip" onclick="setFilterType('tasks', this)">Tasks</button>
+          <button class="filter-chip" onclick="setFilterType('notes', this)">📝 Notes</button>
+          <button class="filter-chip" onclick="setFilterType('tasks', this)">✅ Tasks</button>
           <button class="filter-chip" onclick="setFilterType('starred', this)">⭐ Starred</button>
+          <button class="filter-chip" onclick="setNavView('folder', -998)">🔗 Shared Links</button>
+        </div>
+
+        <!-- Tags filter horizontal bar -->
+        <div class="tags-bar-container" id="globalTagsBar">
+          <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600; white-space:nowrap;">🏷️ Filter Tag:</span>
+          <div id="globalTagsChipsRow" style="display:flex; gap:6px; align-items:center;"></div>
         </div>
       </div>
 
@@ -1223,6 +1410,109 @@
   </div>
 </div>
 
+<!-- Add Link Modal (+Links) with Automatic Metadata & Image Extraction -->
+<div class="modal-backdrop" id="linkModal">
+  <div class="modal-card" style="max-width:540px;">
+    <div class="modal-header">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:1.3rem;">🔗</span>
+        <h3 class="modal-title">Save Link with Metadata</h3>
+      </div>
+      <button class="btn-icon" onclick="closeModal('linkModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:12px; line-height:1.4;">
+        Paste any URL (YouTube Shorts/videos, Instagram, Facebook, Pinterest, or any webpage). We'll automatically resolve its title, image thumbnail, and description and store it right into your <strong>Shared Links</strong> folder.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Link URL or Shared Text</label>
+        <div style="display:flex; gap:8px;">
+          <input type="url" class="form-input" id="linkInputUrl" placeholder="https://youtube.com/shorts/... or https://instagram.com/p/... or https://..." style="font-size:0.95rem; flex:1;" oninput="onLinkUrlInputChanged(this.value)">
+          <button type="button" class="btn btn-primary" onclick="fetchLinkMetadataManual()" id="btnFetchMeta">
+            ⚡ Fetch
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Metadata Preview Box -->
+      <div class="link-meta-preview" id="linkMetaPreview">
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; color:var(--primary); margin-bottom:6px;">
+          Detected Metadata Preview
+        </div>
+        <img id="linkMetaImagePreview" class="link-meta-thumb" src="" alt="Thumbnail preview" style="display:none;">
+        <div style="font-weight:600; font-size:0.92rem; margin-bottom:4px;" id="linkMetaTitlePreview">Title</div>
+        <div style="font-size:0.8rem; color:var(--text-secondary); line-height:1.4;" id="linkMetaDescPreview">Description</div>
+      </div>
+
+      <div class="form-group" style="margin-top:12px;">
+        <label class="form-label">Title (Auto-filled or Custom)</label>
+        <input type="text" class="form-input" id="linkInputTitle" placeholder="Page or Video Title">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes / Description</label>
+        <textarea class="form-textarea" style="min-height:60px;" id="linkInputDescription" placeholder="Optional notes or summary..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Image Thumbnail URL (Auto-fetched)</label>
+        <input type="url" class="form-input" id="linkInputImage" placeholder="https://... image url">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tags (comma separated)</label>
+        <input type="text" class="form-input" id="linkInputTags" placeholder="links, video, social, inspiration...">
+        <div class="quick-tags-row">
+          <span style="font-size:0.75rem; color:var(--text-muted); align-self:center;">Quick:</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('linkInputTags', 'links')">+links</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('linkInputTags', 'video')">+video</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('linkInputTags', 'social')">+social</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('linkInputTags', 'reading')">+reading</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('linkModal')">Cancel</button>
+      <button class="btn" style="background:#2563eb; color:#fff;" onclick="saveLinkToSharedLinks()">Save to Shared Links</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Permanent Tag Modal -->
+<div class="modal-backdrop" id="tagModal">
+  <div class="modal-card" style="max-width:440px;">
+    <div class="modal-header">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:1.3rem;">🏷️</span>
+        <h3 class="modal-title">Create Tag</h3>
+      </div>
+      <button class="btn-icon" onclick="closeModal('tagModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tag Name</label>
+        <input type="text" class="form-input" id="tagInputName" placeholder="e.g. work, priority, urgent, recipes" style="font-size:1rem; font-weight:600;">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tag Color Accent</label>
+        <div class="color-picker-row" id="tagColorPicker" style="margin-top:6px;">
+          <div class="color-swatch active" style="background:#6366f1;" onclick="selectTagColor(0, this)" title="Indigo"></div>
+          <div class="color-swatch" style="background:#ef4444;" onclick="selectTagColor(1, this)" title="Red"></div>
+          <div class="color-swatch" style="background:#10b981;" onclick="selectTagColor(2, this)" title="Green"></div>
+          <div class="color-swatch" style="background:#3b82f6;" onclick="selectTagColor(3, this)" title="Blue"></div>
+          <div class="color-swatch" style="background:#a855f7;" onclick="selectTagColor(4, this)" title="Purple"></div>
+          <div class="color-swatch" style="background:#f59e0b;" onclick="selectTagColor(5, this)" title="Amber"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('tagModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCustomTag()">Save Tag</button>
+    </div>
+  </div>
+</div>
+
 <!-- Google Drive Sync & Settings Modal -->
 <div class="modal-backdrop" id="syncModal">
   <div class="modal-card" style="max-width:550px;">
@@ -1295,7 +1585,8 @@ let state = {
   exportedAt: Date.now(),
   folders: [],
   notes: [],
-  tasks: []
+  tasks: [],
+  customTags: []
 };
 
 // Permanent folders (exact IDs from Android FolderEntity.kt)
@@ -1306,10 +1597,13 @@ let currentNav = 'all'; // 'all', 'notes', 'tasks', 'starred', 'folder'
 let currentFolderId = null;
 let currentSearch = '';
 let currentTypeFilter = 'all';
+let selectedTagFilter = null; // Active tag filter string or null
+let folderSeparationMode = 'split'; // 'split' (Tasks & Notes separate sections) or 'combined'
 
 let editingNoteId = null;
 let editingTaskId = null;
 let selectedNoteColor = 0;
+let selectedTagColorIndex = 0;
 let draftSubtasks = [];
 
 // Drive state
@@ -1357,6 +1651,15 @@ function loadLocalState() {
     const raw = localStorage.getItem(APP_STORAGE_KEY);
     if (raw) {
       state = JSON.parse(raw);
+      if (!Array.isArray(state.customTags)) {
+        state.customTags = [
+          { name: "work", colorIndex: 0 },
+          { name: "personal", colorIndex: 2 },
+          { name: "links", colorIndex: 3 },
+          { name: "ideas", colorIndex: 4 },
+          { name: "urgent", colorIndex: 1 }
+        ];
+      }
     } else {
       // Seed with initial welcoming notes and tasks
       state = {
@@ -1365,6 +1668,13 @@ function loadLocalState() {
         folders: [
           { id: 1, name: "Personal", parentFolderId: null, colorIndex: 3, createdAt: Date.now() },
           { id: 2, name: "Work", parentFolderId: null, colorIndex: 4, createdAt: Date.now() }
+        ],
+        customTags: [
+          { name: "work", colorIndex: 0 },
+          { name: "personal", colorIndex: 2 },
+          { name: "links", colorIndex: 3 },
+          { name: "ideas", colorIndex: 4 },
+          { name: "urgent", colorIndex: 1 }
         ],
         notes: [
           {
@@ -1477,10 +1787,100 @@ function renderNavigation() {
       renderFolderNavItem(sub, listEl, true);
     });
   });
+
+  // Render Tags in Sidebar and Header bar
+  renderTagsNavigation();
+}
+
+const TAG_COLOR_HEX = ['#6366f1', '#ef4444', '#10b981', '#3b82f6', '#a855f7', '#f59e0b'];
+
+function renderTagsNavigation() {
+  const sidebarList = document.getElementById('sidebarTagsList');
+  const chipsRow = document.getElementById('globalTagsChipsRow');
+  if (sidebarList) sidebarList.innerHTML = '';
+  if (chipsRow) chipsRow.innerHTML = '';
+
+  // Collect all unique tags from notes, tasks, and state.customTags
+  const allTagNames = new Set();
+  (state.customTags || []).forEach(t => allTagNames.add(t.name.toLowerCase().trim()));
+  state.notes.forEach(n => {
+    (n.tags || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean).forEach(x => allTagNames.add(x));
+  });
+  state.tasks.forEach(t => {
+    (t.tags || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean).forEach(x => allTagNames.add(x));
+  });
+
+  // "All Tags" chip in header
+  if (chipsRow) {
+    const allChip = document.createElement('button');
+    allChip.className = `tag-chip-filter ${selectedTagFilter === null ? 'active' : ''}`;
+    allChip.innerHTML = `<span>All Tags</span>`;
+    allChip.onclick = () => filterByTag(null);
+    chipsRow.appendChild(allChip);
+  }
+
+  Array.from(allTagNames).sort().forEach(tagName => {
+    const customTag = (state.customTags || []).find(ct => ct.name.toLowerCase() === tagName);
+    const colorHex = TAG_COLOR_HEX[customTag ? (customTag.colorIndex || 0) : 0];
+    
+    // Count occurrences
+    const count = state.notes.filter(n => (n.tags || '').toLowerCase().includes(tagName)).length +
+                  state.tasks.filter(t => (t.tags || '').toLowerCase().includes(tagName)).length;
+
+    // Sidebar item
+    if (sidebarList) {
+      const item = document.createElement('div');
+      item.className = `sidebar-tag-item ${selectedTagFilter === tagName ? 'active' : ''}`;
+      item.onclick = () => filterByTag(tagName);
+      item.innerHTML = `
+        <div style="display:flex; align-items:center; gap:6px; overflow:hidden;">
+          <span class="tag-dot" style="background:${colorHex};"></span>
+          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">#${escapeHtml(tagName)}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:4px;">
+          <span class="nav-counter">${count}</span>
+          ${customTag ? `<span class="folder-btn-action" onclick="event.stopPropagation(); deleteCustomTag('${escapeHtml(tagName)}')" title="Delete tag" style="color:var(--danger); padding:1px 4px;">✕</span>` : ''}
+        </div>
+      `;
+      sidebarList.appendChild(item);
+    }
+
+    // Top header chip
+    if (chipsRow) {
+      const chip = document.createElement('button');
+      chip.className = `tag-chip-filter ${selectedTagFilter === tagName ? 'active' : ''}`;
+      chip.innerHTML = `
+        <span class="tag-dot" style="background:${colorHex};"></span>
+        <span>#${escapeHtml(tagName)}</span>
+        <span style="opacity:0.75; font-size:0.7rem;">(${count})</span>
+      `;
+      chip.onclick = () => filterByTag(tagName);
+      chipsRow.appendChild(chip);
+    }
+  });
+}
+
+function filterByTag(tagName) {
+  if (selectedTagFilter === tagName) {
+    selectedTagFilter = null; // Toggle off if clicked again
+  } else {
+    selectedTagFilter = tagName;
+  }
+  renderTagsNavigation();
+  renderItems();
+}
+
+function setFolderSeparationMode(mode, btn) {
+  folderSeparationMode = mode;
+  document.querySelectorAll('#folderViewSeparationControl .filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderItems();
 }
 
 function renderFolderNavItem(f, containerEl, isSubfolder = false) {
-  const count = state.notes.filter(n => n.folderId === f.id).length + state.tasks.filter(t => t.folderId === f.id).length;
+  const noteCount = state.notes.filter(n => n.folderId === f.id).length;
+  const taskCount = state.tasks.filter(t => t.folderId === f.id).length;
+  const count = noteCount + taskCount;
   
   const div = document.createElement('button');
   div.className = `nav-item ${isSubfolder ? 'subfolder-item' : ''} ${currentNav === 'folder' && currentFolderId === f.id ? 'active' : ''}`;
@@ -1488,10 +1888,10 @@ function renderFolderNavItem(f, containerEl, isSubfolder = false) {
   div.innerHTML = `
     <div class="nav-item-content">
       <span class="nav-icon">${isSubfolder ? '↳ 📁' : '📁'}</span>
-      <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:${isSubfolder ? '110px' : '130px'};">${escapeHtml(f.name)}</span>
+      <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:${isSubfolder ? '90px' : '110px'};">${escapeHtml(f.name)}</span>
     </div>
     <div class="folder-actions-row">
-      <span class="nav-counter">${count}</span>
+      <span class="nav-counter" title="${noteCount} notes, ${taskCount} tasks">${count}</span>
       ${!isSubfolder ? `<span class="folder-btn-action" onclick="event.stopPropagation(); openCreateFolderModal(${f.id})" title="Add Subfolder" style="font-weight:bold;">+</span>` : ''}
       <span class="folder-btn-action" onclick="event.stopPropagation(); deleteFolder(${f.id})" title="Delete folder" style="color:var(--danger);">✕</span>
     </div>
@@ -1543,6 +1943,12 @@ function renderItems() {
     list = list.filter(i => i.isStarred);
   }
 
+  // Filter by Active Tag Filter
+  if (selectedTagFilter) {
+    const tq = selectedTagFilter.toLowerCase();
+    list = list.filter(i => (i.tags || '').toLowerCase().split(',').map(s => s.trim()).includes(tq));
+  }
+
   // Filter by Search Query
   if (currentSearch.trim()) {
     const q = currentSearch.toLowerCase().trim();
@@ -1568,8 +1974,54 @@ function renderItems() {
 
   if (list.length === 0) {
     emptyState.style.display = 'block';
+    return;
+  }
+  
+  emptyState.style.display = 'none';
+
+  // FOLDER SEPARATION: When inside a folder (or All items) and separation is enabled,
+  // distinctly partition into TASKS and NOTES sections like the Android app!
+  const isInsideFolder = currentNav === 'folder' && currentFolderId !== PERMA_COMPLETED_TASKS_ID && currentFolderId !== PERMA_SHARED_LINKS_ID;
+  const shouldSeparate = (isInsideFolder && folderSeparationMode === 'split') || (currentNav === 'all' && currentTypeFilter === 'all' && !selectedTagFilter && !currentSearch.trim());
+
+  if (shouldSeparate) {
+    const tasksPart = list.filter(i => i.type === 'task');
+    const notesPart = list.filter(i => i.type === 'note');
+
+    // Section 1: Tasks
+    if (tasksPart.length > 0) {
+      const pendingCount = tasksPart.filter(t => !t.isCompleted).length;
+      const headerDiv = document.createElement('div');
+      headerDiv.className = 'section-divider-header';
+      headerDiv.innerHTML = `
+        <div class="section-divider-title" style="color:var(--success);">
+          <span>✅ TASKS</span>
+          <span style="font-size:0.75rem; opacity:0.8;">(${pendingCount} pending, ${tasksPart.length} total)</span>
+        </div>
+        <button class="btn btn-success" style="font-size:0.75rem; padding:4px 10px;" onclick="openCreateTaskModal()">+ Add Task</button>
+      `;
+      container.appendChild(headerDiv);
+
+      tasksPart.forEach(t => container.appendChild(createTaskCard(t)));
+    }
+
+    // Section 2: Notes
+    if (notesPart.length > 0) {
+      const headerDiv = document.createElement('div');
+      headerDiv.className = 'section-divider-header';
+      headerDiv.innerHTML = `
+        <div class="section-divider-title" style="color:var(--primary);">
+          <span>📝 NOTES</span>
+          <span style="font-size:0.75rem; opacity:0.8;">(${notesPart.length} items)</span>
+        </div>
+        <button class="btn btn-primary" style="font-size:0.75rem; padding:4px 10px;" onclick="openCreateNoteModal()">+ Add Note</button>
+      `;
+      container.appendChild(headerDiv);
+
+      notesPart.forEach(n => container.appendChild(createNoteCard(n)));
+    }
   } else {
-    emptyState.style.display = 'none';
+    // Normal unified view
     list.forEach(item => {
       if (item.type === 'note') {
         container.appendChild(createNoteCard(item));
@@ -1586,10 +2038,21 @@ function createNoteCard(note) {
 
   const tagsArr = (note.tags || '').split(',').map(t => t.trim()).filter(Boolean);
   const folderName = getFolderName(note.folderId);
+  const isSharedLink = note.folderId === PERMA_SHARED_LINKS_ID;
+
+  // Rich images: extract from imageUris property or first URL image in content
+  let displayImg = note.imageUris || '';
+  if (!displayImg && note.content) {
+    const imgMatch = note.content.match(/(https?:\/\/[^\s]+?\.(?:png|jpg|jpeg|gif|webp|svg))/i);
+    if (imgMatch) displayImg = imgMatch[1];
+  }
 
   card.innerHTML = `
     <div class="card-header">
-      <div class="card-title">${escapeHtml(note.title || 'Untitled Note')}</div>
+      <div style="display:flex; align-items:center; gap:6px; flex:1;">
+        ${isSharedLink ? `<span class="link-badge">🔗 Shared Link</span>` : ''}
+        <div class="card-title">${escapeHtml(note.title || 'Untitled Note')}</div>
+      </div>
       <div class="card-actions-row">
         <button class="btn-icon" onclick="toggleStarNote('${escapeHtml(note.title)}', ${note.createdAt})" title="Star note">
           ${note.isStarred ? '⭐' : '☆'}
@@ -1603,12 +2066,17 @@ function createNoteCard(note) {
       </div>
     </div>
 
+    ${displayImg ? `
+      <img src="${escapeHtml(displayImg)}" class="card-preview-image" alt="Link Image" 
+        onerror="this.style.display='none'" loading="lazy" />
+    ` : ''}
+
     <div class="card-content-preview">${linkify(escapeHtml(note.content || ''))}</div>
 
     <div class="card-meta">
       <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
         ${folderName ? `<span class="folder-chip">📁 ${escapeHtml(folderName)}</span>` : ''}
-        ${tagsArr.map(t => `<span class="tag-badge">#${escapeHtml(t)}</span>`).join('')}
+        ${tagsArr.map(t => `<span class="tag-badge" style="cursor:pointer;" onclick="filterByTag('${escapeHtml(t)}')">#${escapeHtml(t)}</span>`).join('')}
       </div>
       <span>${formatDate(note.updatedAt || note.createdAt)}</span>
     </div>
@@ -2151,6 +2619,16 @@ function setNavView(nav, folderId = null) {
     }
   }
 
+  // Toggle folder separation control when inside a folder
+  const sepControl = document.getElementById('folderViewSeparationControl');
+  if (sepControl) {
+    if (nav === 'folder' && folderId !== PERMA_COMPLETED_TASKS_ID && folderId !== PERMA_SHARED_LINKS_ID) {
+      sepControl.style.display = 'inline-flex';
+    } else {
+      sepControl.style.display = 'none';
+    }
+  }
+
   // Update active sidebar buttons
   document.querySelectorAll('.sidebar .nav-item').forEach(b => b.classList.remove('active'));
   renderNavigation();
@@ -2158,6 +2636,276 @@ function setNavView(nav, folderId = null) {
 
   // Close mobile sidebar if open
   document.getElementById('appSidebar').classList.remove('open');
+}
+
+// ================= CUSTOM TAGS MANAGEMENT =================
+
+function openCreateTagModal() {
+  document.getElementById('tagInputName').value = '';
+  selectedTagColorIndex = 0;
+  const swatches = document.querySelectorAll('#tagColorPicker .color-swatch');
+  swatches.forEach((s, idx) => s.classList.toggle('active', idx === 0));
+  openModal('tagModal');
+}
+
+function selectTagColor(index, el) {
+  selectedTagColorIndex = index;
+  const swatches = document.querySelectorAll('#tagColorPicker .color-swatch');
+  swatches.forEach((s, idx) => s.classList.toggle('active', idx === index));
+}
+
+function saveCustomTag() {
+  const name = document.getElementById('tagInputName').value.trim().toLowerCase().replace(/^#/, '');
+  if (!name) return;
+  if (!Array.isArray(state.customTags)) state.customTags = [];
+
+  const existingIdx = state.customTags.findIndex(t => t.name.toLowerCase() === name);
+  if (existingIdx !== -1) {
+    state.customTags[existingIdx].colorIndex = selectedTagColorIndex;
+  } else {
+    state.customTags.push({
+      name: name,
+      colorIndex: selectedTagColorIndex,
+      createdAt: Date.now()
+    });
+  }
+
+  saveLocalState();
+  renderNavigation();
+  closeModal('tagModal');
+  showToast(`Tag #${name} saved ✓`);
+  triggerAutoCloudSync();
+}
+
+function deleteCustomTag(name) {
+  if (!confirm(`Delete tag #${name}? (Items will keep the text)`)) return;
+  state.customTags = (state.customTags || []).filter(t => t.name.toLowerCase() !== name.toLowerCase());
+  if (selectedTagFilter === name.toLowerCase()) {
+    selectedTagFilter = null;
+  }
+  saveLocalState();
+  renderNavigation();
+  renderItems();
+  showToast(`Tag removed`);
+  triggerAutoCloudSync();
+}
+
+// ================= +LINKS & METADATA EXTRACTION ENGINE =================
+
+let _metaDebounceTimer = null;
+
+function openAddLinkModal() {
+  document.getElementById('linkInputUrl').value = '';
+  document.getElementById('linkInputTitle').value = '';
+  document.getElementById('linkInputDescription').value = '';
+  document.getElementById('linkInputImage').value = '';
+  document.getElementById('linkInputTags').value = 'links';
+  document.getElementById('linkMetaPreview').classList.remove('active');
+  document.getElementById('linkMetaImagePreview').style.display = 'none';
+  document.getElementById('btnFetchMeta').textContent = '⚡ Fetch';
+  openModal('linkModal');
+}
+
+function onLinkUrlInputChanged(val) {
+  clearTimeout(_metaDebounceTimer);
+  const cleanUrl = extractFirstUrl(val);
+  if (cleanUrl) {
+    _metaDebounceTimer = setTimeout(() => {
+      fetchLinkMetadata(cleanUrl);
+    }, 500);
+  }
+}
+
+function fetchLinkMetadataManual() {
+  const inputVal = document.getElementById('linkInputUrl').value;
+  const cleanUrl = extractFirstUrl(inputVal) || inputVal.trim();
+  if (!cleanUrl) {
+    alert('Please enter a valid URL first.');
+    return;
+  }
+  fetchLinkMetadata(cleanUrl);
+}
+
+function extractFirstUrl(text) {
+  if (!text) return null;
+  const match = text.match(/(https?:\/\/[^\s]+)/i);
+  return match ? match[1] : null;
+}
+
+function extractYouTubeId(url) {
+  if (!url) return null;
+  const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i;
+  const match = url.match(regExp);
+  return match ? match[1] : null;
+}
+
+function extractDomain(url) {
+  try {
+    const u = new URL(url);
+    return u.hostname.replace(/^www\./, '');
+  } catch (e) {
+    return 'link';
+  }
+}
+
+async function fetchLinkMetadata(rawUrl) {
+  const btn = document.getElementById('btnFetchMeta');
+  btn.textContent = '⏳ Fetching...';
+
+  const cleanUrl = rawUrl.trim();
+  const domain = extractDomain(cleanUrl);
+  const ytId = extractYouTubeId(cleanUrl);
+
+  let detectedTitle = '';
+  let detectedDescription = '';
+  let detectedImage = '';
+
+  // 1. YouTube & YouTube Shorts (Fast oEmbed + HQ thumbnail)
+  if (ytId) {
+    detectedImage = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+    detectedTitle = `YouTube Video (${domain})`;
+    try {
+      const oEmbedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ytId}&format=json`;
+      const res = await fetch(oEmbedUrl);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.title) detectedTitle = json.title;
+        if (json.author_name) detectedDescription = `Channel: ${json.author_name}`;
+        if (json.thumbnail_url) detectedImage = json.thumbnail_url;
+      }
+    } catch (e) {
+      // offline / CORS fallback works with direct image
+    }
+  } 
+  // 2. Instagram links (Reels, Posts)
+  else if (domain.includes('instagram.com')) {
+    detectedTitle = 'Instagram Post';
+    detectedDescription = `Shared from Instagram: ${cleanUrl}`;
+    const cleanMedia = cleanUrl.split('?')[0].replace(/\/$/, '');
+    detectedImage = `${cleanMedia}/media/?size=l`;
+  }
+  // 3. Pinterest links
+  else if (domain.includes('pinterest.com') || domain.includes('pin.it')) {
+    detectedTitle = 'Pinterest Pin';
+    detectedDescription = `Saved from Pinterest: ${cleanUrl}`;
+  }
+  // 4. Facebook links
+  else if (domain.includes('facebook.com') || domain.includes('fb.watch')) {
+    detectedTitle = 'Facebook Link';
+    detectedDescription = `Shared from Facebook: ${cleanUrl}`;
+  }
+
+  // 5. General Webpages & Fallback (Try Microlink public metadata API for OpenGraph images & title)
+  if (!detectedTitle || !detectedImage || (!ytId && !domain.includes('instagram.com'))) {
+    try {
+      const apiEndpoint = `https://api.microlink.io?url=${encodeURIComponent(cleanUrl)}`;
+      const res = await fetch(apiEndpoint);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'success' && data.data) {
+          const d = data.data;
+          if (d.title && !detectedTitle) detectedTitle = d.title;
+          if (d.description && !detectedDescription) detectedDescription = d.description;
+          if (d.image && d.image.url && !detectedImage) detectedImage = d.image.url;
+          if (d.logo && d.logo.url && !detectedImage) detectedImage = d.logo.url;
+        }
+      }
+    } catch (err) {
+      console.log('OpenGraph API attempt completed with fallback:', err);
+    }
+  }
+
+  // Final fallback title if empty
+  if (!detectedTitle) {
+    try {
+      const u = new URL(cleanUrl);
+      const segs = u.pathname.split('/').filter(Boolean);
+      detectedTitle = segs.length > 0 ? segs[segs.length - 1].replace(/[-_]/g, ' ') : domain;
+      detectedTitle = detectedTitle.charAt(0).toUpperCase() + detectedTitle.slice(1);
+    } catch (e) {
+      detectedTitle = 'Shared Link (' + domain + ')';
+    }
+  }
+
+  // Populate form inputs
+  const titleInput = document.getElementById('linkInputTitle');
+  const descInput = document.getElementById('linkInputDescription');
+  const imgInput = document.getElementById('linkInputImage');
+
+  if (!titleInput.value) titleInput.value = detectedTitle;
+  if (!descInput.value && detectedDescription) descInput.value = detectedDescription;
+  if (!imgInput.value && detectedImage) imgInput.value = detectedImage;
+
+  // Add auto tags
+  const tagsInput = document.getElementById('linkInputTags');
+  const tagsList = tagsInput.value.split(',').map(s => s.trim().toLowerCase());
+  if (ytId && !tagsList.includes('video')) tagsList.push('video');
+  if (domain.includes('instagram') && !tagsList.includes('insta')) tagsList.push('insta');
+  if (domain.includes('pinterest') && !tagsList.includes('pinterest')) tagsList.push('pinterest');
+  if (domain.includes('facebook') && !tagsList.includes('facebook')) tagsList.push('facebook');
+  if (domain && !tagsList.includes(domain.split('.')[0])) tagsList.push(domain.split('.')[0]);
+  tagsInput.value = Array.from(new Set(tagsList)).join(', ');
+
+  // Update Preview Box
+  const previewBox = document.getElementById('linkMetaPreview');
+  const previewImg = document.getElementById('linkMetaImagePreview');
+  const previewTitle = document.getElementById('linkMetaTitlePreview');
+  const previewDesc = document.getElementById('linkMetaDescPreview');
+
+  previewTitle.textContent = detectedTitle;
+  previewDesc.textContent = detectedDescription || cleanUrl;
+
+  if (detectedImage) {
+    previewImg.src = detectedImage;
+    previewImg.style.display = 'block';
+  } else {
+    previewImg.style.display = 'none';
+  }
+  previewBox.classList.add('active');
+
+  btn.textContent = '⚡ Fetched ✓';
+  setTimeout(() => { btn.textContent = '⚡ Fetch'; }, 2000);
+}
+
+function saveLinkToSharedLinks() {
+  const urlVal = document.getElementById('linkInputUrl').value.trim();
+  const cleanUrl = extractFirstUrl(urlVal) || urlVal;
+  if (!cleanUrl) {
+    alert('Please enter a valid Link URL.');
+    return;
+  }
+
+  const title = document.getElementById('linkInputTitle').value.trim() || 'Shared Link';
+  const desc = document.getElementById('linkInputDescription').value.trim();
+  const imageUrl = document.getElementById('linkInputImage').value.trim();
+  const tags = document.getElementById('linkInputTags').value.trim();
+
+  // Create content with markdown link and description
+  let content = `${cleanUrl}`;
+  if (desc) {
+    content += `\n\n${desc}`;
+  }
+
+  const now = Date.now();
+  state.notes.push({
+    title: title,
+    content: content,
+    tags: tags || 'links',
+    imageUris: imageUrl,
+    isStarred: false,
+    colorIndex: 3, // Ocean blue default for links
+    folderId: PERMA_SHARED_LINKS_ID, // Exact permanent Shared Links folder!
+    createdAt: now,
+    updatedAt: now
+  });
+
+  saveLocalState();
+  closeModal('linkModal');
+  showToast('Saved to Shared Links ✓');
+
+  // Navigate right to the Shared Links folder so the user immediately sees it!
+  setNavView('folder', PERMA_SHARED_LINKS_ID);
+  triggerAutoCloudSync();
 }
 
 function setFilterType(type, btn) {
@@ -2454,6 +3202,17 @@ function mergeRemoteBackup(remote) {
         }
       } else {
         state.tasks.push(rt);
+      }
+    });
+  }
+
+  // 4. Merge Custom Tags
+  if (Array.isArray(remote.customTags)) {
+    if (!Array.isArray(state.customTags)) state.customTags = [];
+    remote.customTags.forEach(rt => {
+      const exists = state.customTags.find(lt => lt.name.toLowerCase() === rt.name.toLowerCase());
+      if (!exists) {
+        state.customTags.push(rt);
       }
     });
   }

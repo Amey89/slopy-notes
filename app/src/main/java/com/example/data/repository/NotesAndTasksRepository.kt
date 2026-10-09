@@ -9,6 +9,7 @@ import com.example.data.model.BackupFolder
 import com.example.data.model.BackupNote
 import com.example.data.model.BackupPayload
 import com.example.data.model.BackupSubTask
+import com.example.data.model.BackupTag
 import com.example.data.model.BackupTask
 import com.example.data.model.FolderEntity
 import com.example.data.model.NoteEntity
@@ -314,6 +315,7 @@ class NotesAndTasksRepository(
             BackupFolder(
                 id = FolderEntity.COMPLETED_TASKS_FOLDER_ID,
                 name = FolderEntity.PermanentCompletedFolder.name,
+                folderType = FolderEntity.PermanentCompletedFolder.folderType,
                 parentFolderId = null,
                 colorIndex = FolderEntity.PermanentCompletedFolder.colorIndex,
                 createdAt = FolderEntity.PermanentCompletedFolder.createdAt
@@ -321,6 +323,7 @@ class NotesAndTasksRepository(
             BackupFolder(
                 id = FolderEntity.SHARED_LINKS_FOLDER_ID,
                 name = FolderEntity.PermanentSharedLinksFolder.name,
+                folderType = FolderEntity.PermanentSharedLinksFolder.folderType,
                 parentFolderId = null,
                 colorIndex = FolderEntity.PermanentSharedLinksFolder.colorIndex,
                 createdAt = FolderEntity.PermanentSharedLinksFolder.createdAt
@@ -330,12 +333,21 @@ class NotesAndTasksRepository(
             BackupFolder(
                 id = it.id,
                 name = it.name,
+                folderType = it.folderType,
                 parentFolderId = it.parentFolderId,
                 colorIndex = it.colorIndex,
                 createdAt = it.createdAt
             )
         }
         val folders = permanentFolders + dbFolders
+
+        val tags = tagDao.getAllTagsDirect().map {
+            BackupTag(
+                name = it.name,
+                colorIndex = it.colorIndex,
+                createdAt = it.createdAt
+            )
+        }
 
         val notes = noteDao.getAllNotesDirect().map {
             BackupNote(
@@ -382,7 +394,8 @@ class NotesAndTasksRepository(
         val payload = BackupPayload(
             notes = notes,
             tasks = tasks,
-            folders = folders
+            folders = folders,
+            tags = tags
         )
 
         val adapter = moshi.adapter(BackupPayload::class.java)
@@ -413,6 +426,7 @@ class NotesAndTasksRepository(
                 val newId = folderDao.insertFolder(
                     FolderEntity(
                         name = f.name,
+                        folderType = f.folderType ?: "NOTE",
                         parentFolderId = f.parentFolderId?.let { folderIdMap[it] },
                         colorIndex = f.colorIndex,
                         createdAt = f.createdAt
@@ -420,6 +434,12 @@ class NotesAndTasksRepository(
                 )
                 folderIdMap[f.id] = newId
                 importedCount++
+            }
+
+            for (tag in payload.tags) {
+                if (tag.name.isNotBlank()) {
+                    createTag(tag.name, tag.colorIndex)
+                }
             }
 
             for (note in payload.notes) {
