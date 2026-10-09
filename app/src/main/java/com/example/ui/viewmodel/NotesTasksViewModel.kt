@@ -678,6 +678,48 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
 
     fun getDriveAccountEmail(): String? = googleDriveSyncManager.getAccountEmail()
 
+    // Custom Deletion Operations
+    fun deleteNotesCustom(deleteAll: Boolean, unstarredOnly: Boolean, onComplete: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            repository.deleteNotesCustom(deleteAll, unstarredOnly)
+            NotesTasksAppWidget.notifyWidgetUpdate(getApplication())
+            onComplete?.invoke()
+        }
+    }
+
+    fun deleteTasksCustom(deleteAll: Boolean, completedOnly: Boolean, onComplete: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            repository.deleteTasksCustom(deleteAll, completedOnly)
+            NotesTasksAppWidget.notifyWidgetUpdate(getApplication())
+            onComplete?.invoke()
+        }
+    }
+
+    fun deleteCustomFolders(onComplete: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            repository.deleteCustomFolders()
+            NotesTasksAppWidget.notifyWidgetUpdate(getApplication())
+            onComplete?.invoke()
+        }
+    }
+
+    fun deleteCustomTags(onComplete: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            repository.deleteCustomTags()
+            onComplete?.invoke()
+        }
+    }
+
+    fun clearEntireAppData(onComplete: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            repository.clearEntireAppData()
+            _selectedFolder.value = null
+            _searchQuery.value = ""
+            NotesTasksAppWidget.notifyWidgetUpdate(getApplication())
+            onComplete?.invoke()
+        }
+    }
+
     fun checkAndPerformDriveAutoSync() {
         viewModelScope.launch {
             if (googleDriveSyncManager.isConnected() && googleDriveSyncManager.autoSyncOnOpen.value) {

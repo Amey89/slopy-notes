@@ -520,4 +520,50 @@ class NotesAndTasksRepository(
     suspend fun exportToMarkdownBundle(context: Context): File {
         return exportMarkdownZipBundle(context)
     }
+
+    // Custom Data Deletion options
+    suspend fun deleteNotesCustom(
+        deleteAllNotes: Boolean,
+        deleteUnstarredOnly: Boolean
+    ) = withContext(Dispatchers.IO) {
+        if (deleteAllNotes) {
+            folderDao.deleteAllNoteCrossRefs()
+            noteDao.deleteAllNotes()
+        } else if (deleteUnstarredOnly) {
+            noteDao.deleteUnstarredNotes()
+        }
+    }
+
+    suspend fun deleteTasksCustom(
+        deleteAllTasks: Boolean,
+        deleteCompletedOnly: Boolean
+    ) = withContext(Dispatchers.IO) {
+        if (deleteAllTasks) {
+            folderDao.deleteAllTaskCrossRefs()
+            taskDao.deleteAllSubtasks()
+            taskDao.deleteAllTasks()
+        } else if (deleteCompletedOnly) {
+            taskDao.deleteCompletedTasks()
+        }
+    }
+
+    suspend fun deleteCustomFolders() = withContext(Dispatchers.IO) {
+        folderDao.deleteAllCustomFolders()
+    }
+
+    suspend fun deleteCustomTags() = withContext(Dispatchers.IO) {
+        tagDao.deleteAllTags()
+    }
+
+    suspend fun clearEntireAppData() = withContext(Dispatchers.IO) {
+        folderDao.deleteAllNoteCrossRefs()
+        folderDao.deleteAllTaskCrossRefs()
+        taskDao.deleteAllSubtasks()
+        taskDao.deleteAllTasks()
+        noteDao.deleteAllNotes()
+        folderDao.deleteAllFolders()
+        tagDao.deleteAllTags()
+        // Re-seed default permanent folders/tags
+        ensureDefaultTags()
+    }
 }

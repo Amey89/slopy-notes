@@ -98,6 +98,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Palette
@@ -152,6 +161,24 @@ fun SettingsScreen(
 
     // Restore from Google Drive confirmation dialog
     var showRestoreDriveConfirmDialog by remember { mutableStateOf(false) }
+
+    // Password Protection for Client ID
+    var showPasswordAuthDialog by remember { mutableStateOf(false) }
+    var passwordInput by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var isPasswordVisible by remember { mutableStateOf(false) }
+    var pendingProtectedAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    // Custom Deletion Dialog & Checkboxes
+    var showCustomDeletionDialog by remember { mutableStateOf(false) }
+    var deleteEntireAppDataSelected by remember { mutableStateOf(false) }
+    var deleteNotesSelected by remember { mutableStateOf(false) }
+    var deleteNotesUnstarredOnly by remember { mutableStateOf(false) }
+    var deleteTasksSelected by remember { mutableStateOf(false) }
+    var deleteTasksCompletedOnly by remember { mutableStateOf(false) }
+    var deleteCustomFoldersSelected by remember { mutableStateOf(false) }
+    var deleteCustomTagsSelected by remember { mutableStateOf(false) }
+    var showConfirmDeleteWarningDialog by remember { mutableStateOf(false) }
 
     // Consent Launcher for UserRecoverableAuthException
     val consentLauncher = rememberLauncherForActivityResult(
@@ -1073,12 +1100,26 @@ fun SettingsScreen(
                 CredentialCopyBox(
                     label = "Client ID",
                     value = activeClientId,
+                    isProtected = true,
+                    onProtectedCopyRequest = {
+                        pendingProtectedAction = {
+                            copyToClipboard(context, "Client ID", activeClientId)
+                        }
+                        passwordInput = ""
+                        passwordError = null
+                        showPasswordAuthDialog = true
+                    },
                     onCopy = {
                         copyToClipboard(context, "Client ID", activeClientId)
                     },
                     onEdit = {
-                        customClientIdInput = activeClientId
-                        showEditClientIdDialog = true
+                        pendingProtectedAction = {
+                            customClientIdInput = activeClientId
+                            showEditClientIdDialog = true
+                        }
+                        passwordInput = ""
+                        passwordError = null
+                        showPasswordAuthDialog = true
                     }
                 )
 
@@ -1139,6 +1180,39 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Error 10 Guide", fontSize = 11.sp)
                     }
+                }
+            }
+
+            // 7. Custom Data Deletion & Storage Management
+            SettingsSection(title = "Data Reset & Deletion Menu", icon = Icons.Default.DeleteForever) {
+                Text(
+                    text = "Selectively remove notes, tasks, custom tags, folders, or completely wipe app data.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Button(
+                    onClick = {
+                        deleteEntireAppDataSelected = false
+                        deleteNotesSelected = false
+                        deleteNotesUnstarredOnly = false
+                        deleteTasksSelected = false
+                        deleteTasksCompletedOnly = false
+                        deleteCustomFoldersSelected = false
+                        deleteCustomTagsSelected = false
+                        showCustomDeletionDialog = true
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Open Custom Deletion Menu", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
             }
 
@@ -1479,6 +1553,377 @@ fun SettingsScreen(
             }
         )
     }
+
+    // Password Protection Dialog for Client ID
+    if (showPasswordAuthDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showPasswordAuthDialog = false
+                pendingProtectedAction = null
+                passwordInput = ""
+                passwordError = null
+            },
+            icon = {
+                Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            },
+            title = {
+                Text("Password Required", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "This credential is encrypted/protected. Enter the administrator password to view, copy, or edit your Client ID.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = passwordInput,
+                        onValueChange = {
+                            passwordInput = it
+                            passwordError = null
+                        },
+                        label = { Text("Enter Password") },
+                        isError = passwordError != null,
+                        supportingText = {
+                            if (passwordError != null) {
+                                Text(passwordError!!, color = MaterialTheme.colorScheme.error)
+                            }
+                        },
+                        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                                Icon(
+                                    imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = if (isPasswordVisible) "Hide password" else "Show password"
+                                )
+                            }
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (passwordInput == "amey44") {
+                            showPasswordAuthDialog = false
+                            val action = pendingProtectedAction
+                            pendingProtectedAction = null
+                            passwordInput = ""
+                            passwordError = null
+                            action?.invoke()
+                        } else {
+                            passwordError = "Incorrect password. Access denied."
+                        }
+                    }
+                ) {
+                    Text("Unlock")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showPasswordAuthDialog = false
+                        pendingProtectedAction = null
+                        passwordInput = ""
+                        passwordError = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Custom Deletion Selection Menu Dialog
+    if (showCustomDeletionDialog) {
+        AlertDialog(
+            onDismissRequest = { showCustomDeletionDialog = false },
+            icon = {
+                Icon(Icons.Default.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+            },
+            title = {
+                Text("Custom Data Deletion", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "Choose precisely what data categories to wipe. You can select individual subsets or check 'Wipe Entire App Data'.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Option: Entire App Data
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (deleteEntireAppDataSelected) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        border = BorderStroke(
+                            1.dp,
+                            if (deleteEntireAppDataSelected) MaterialTheme.colorScheme.error else Color.Transparent
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                deleteEntireAppDataSelected = !deleteEntireAppDataSelected
+                                if (deleteEntireAppDataSelected) {
+                                    deleteNotesSelected = false
+                                    deleteNotesUnstarredOnly = false
+                                    deleteTasksSelected = false
+                                    deleteTasksCompletedOnly = false
+                                    deleteCustomFoldersSelected = false
+                                    deleteCustomTagsSelected = false
+                                }
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = deleteEntireAppDataSelected,
+                                onCheckedChange = { checked ->
+                                    deleteEntireAppDataSelected = checked
+                                    if (checked) {
+                                        deleteNotesSelected = false
+                                        deleteNotesUnstarredOnly = false
+                                        deleteTasksSelected = false
+                                        deleteTasksCompletedOnly = false
+                                        deleteCustomFoldersSelected = false
+                                        deleteCustomTagsSelected = false
+                                    }
+                                },
+                                colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.error)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column {
+                                Text(
+                                    "Wipe Entire App Data",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                Text(
+                                    "Completely erases all notes, tasks, subtasks, folders, tags, and resets app to pristine state.",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    if (!deleteEntireAppDataSelected) {
+                        Divider(modifier = Modifier.padding(vertical = 4.dp))
+
+                        Text("Selective Item Deletion:", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+
+                        // 1. Delete Notes
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { deleteNotesSelected = !deleteNotesSelected }
+                        ) {
+                            Checkbox(
+                                checked = deleteNotesSelected,
+                                onCheckedChange = { deleteNotesSelected = it }
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Delete Notes", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                Text("Removes all notes from local database", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+
+                        if (!deleteNotesSelected) {
+                            // Sub-option: Unstarred Notes only
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 24.dp)
+                                    .clickable { deleteNotesUnstarredOnly = !deleteNotesUnstarredOnly }
+                            ) {
+                                Checkbox(
+                                    checked = deleteNotesUnstarredOnly,
+                                    onCheckedChange = { deleteNotesUnstarredOnly = it }
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column {
+                                    Text("Unstarred notes only", fontSize = 12.sp)
+                                    Text("Keep your starred/favorited notes safe", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+
+                        // 2. Delete Tasks
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { deleteTasksSelected = !deleteTasksSelected }
+                        ) {
+                            Checkbox(
+                                checked = deleteTasksSelected,
+                                onCheckedChange = { deleteTasksSelected = it }
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Delete Tasks", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                Text("Removes all tasks and checklists", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+
+                        if (!deleteTasksSelected) {
+                            // Sub-option: Completed Tasks only
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 24.dp)
+                                    .clickable { deleteTasksCompletedOnly = !deleteTasksCompletedOnly }
+                            ) {
+                                Checkbox(
+                                    checked = deleteTasksCompletedOnly,
+                                    onCheckedChange = { deleteTasksCompletedOnly = it }
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column {
+                                    Text("Completed tasks only", fontSize = 12.sp)
+                                    Text("Cleans up finished to-dos and archives", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+
+                        // 3. Delete Custom Folders
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { deleteCustomFoldersSelected = !deleteCustomFoldersSelected }
+                        ) {
+                            Checkbox(
+                                checked = deleteCustomFoldersSelected,
+                                onCheckedChange = { deleteCustomFoldersSelected = it }
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Delete Custom Folders", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                Text("Removes created folders (items moved to root)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+
+                        // 4. Delete Custom Tags
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { deleteCustomTagsSelected = !deleteCustomTagsSelected }
+                        ) {
+                            Checkbox(
+                                checked = deleteCustomTagsSelected,
+                                onCheckedChange = { deleteCustomTagsSelected = it }
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Delete Custom Tags", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                Text("Resets custom tags list to default", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                val hasAnySelection = deleteEntireAppDataSelected ||
+                        deleteNotesSelected || deleteNotesUnstarredOnly ||
+                        deleteTasksSelected || deleteTasksCompletedOnly ||
+                        deleteCustomFoldersSelected || deleteCustomTagsSelected
+
+                Button(
+                    enabled = hasAnySelection,
+                    onClick = {
+                        showConfirmDeleteWarningDialog = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Proceed to Delete", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCustomDeletionDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Final Confirmation Dialog for Deletion
+    if (showConfirmDeleteWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDeleteWarningDialog = false },
+            icon = {
+                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+            },
+            title = {
+                Text(
+                    if (deleteEntireAppDataSelected) "Wipe Entire App Data?" else "Confirm Selected Deletion?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    if (deleteEntireAppDataSelected) {
+                        "Are you absolutely sure? This will permanently delete all notes, tasks, subtasks, folders, and tags. This operation cannot be undone."
+                    } else {
+                        "Are you sure you want to delete the selected data categories? Selected items will be permanently erased from your local database."
+                    },
+                    fontSize = 13.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmDeleteWarningDialog = false
+                        showCustomDeletionDialog = false
+
+                        if (deleteEntireAppDataSelected) {
+                            viewModel.clearEntireAppData {
+                                Toast.makeText(context, "All app data has been wiped successfully.", Toast.LENGTH_LONG).show()
+                            }
+                        } else {
+                            if (deleteNotesSelected || deleteNotesUnstarredOnly) {
+                                viewModel.deleteNotesCustom(deleteNotesSelected, deleteNotesUnstarredOnly)
+                            }
+                            if (deleteTasksSelected || deleteTasksCompletedOnly) {
+                                viewModel.deleteTasksCustom(deleteTasksSelected, deleteTasksCompletedOnly)
+                            }
+                            if (deleteCustomFoldersSelected) {
+                                viewModel.deleteCustomFolders()
+                            }
+                            if (deleteCustomTagsSelected) {
+                                viewModel.deleteCustomTags()
+                            }
+                            Toast.makeText(context, "Selected data deleted successfully.", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Yes, Delete Now", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmDeleteWarningDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -1605,8 +2050,12 @@ private fun CredentialCopyBox(
     label: String,
     value: String,
     onCopy: () -> Unit,
-    onEdit: (() -> Unit)? = null
+    onEdit: (() -> Unit)? = null,
+    isProtected: Boolean = false,
+    onProtectedCopyRequest: (() -> Unit)? = null
 ) {
+    var isRevealed by remember { mutableStateOf(!isProtected) }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1620,22 +2069,72 @@ private fun CredentialCopyBox(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = label,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    if (isProtected) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(10.dp)
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "Protected",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(3.dp))
+                val displayValue = if (isProtected && !isRevealed) {
+                    if (value.length > 12) {
+                        "${value.take(6)}••••••••••••••••••••••••${value.takeLast(6)}"
+                    } else "••••••••••••••••"
+                } else value
+
                 Text(
-                    text = label,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = value,
+                    text = displayValue,
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = if (isProtected && !isRevealed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                 )
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isProtected) {
+                    IconButton(onClick = {
+                        if (isRevealed) {
+                            isRevealed = false
+                        } else {
+                            onProtectedCopyRequest?.invoke()
+                        }
+                    }) {
+                        Icon(
+                            imageVector = if (isRevealed) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (isRevealed) "Hide $label" else "Show/Unlock $label",
+                            tint = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
                 if (onEdit != null) {
                     IconButton(onClick = onEdit) {
                         Icon(
@@ -1646,9 +2145,15 @@ private fun CredentialCopyBox(
                         )
                     }
                 }
-                IconButton(onClick = onCopy) {
+                IconButton(onClick = {
+                    if (isProtected && !isRevealed) {
+                        onProtectedCopyRequest?.invoke()
+                    } else {
+                        onCopy()
+                    }
+                }) {
                     Icon(
-                        imageVector = Icons.Default.ContentCopy,
+                        imageVector = if (isProtected && !isRevealed) Icons.Default.Lock else Icons.Default.ContentCopy,
                         contentDescription = "Copy $label",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)

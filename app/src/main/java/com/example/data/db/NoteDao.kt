@@ -61,6 +61,18 @@ interface NoteDao {
     @Query("DELETE FROM notes WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("DELETE FROM notes")
+    suspend fun deleteAllNotes()
+
+    @Query("DELETE FROM notes WHERE isStarred = 0")
+    suspend fun deleteUnstarredNotes()
+
+    @Query("DELETE FROM notes WHERE isStarred = 1")
+    suspend fun deleteStarredNotes()
+
+    @Query("DELETE FROM notes WHERE folderId IS NOT NULL")
+    suspend fun deleteNotesInFolders()
+
     @Query("UPDATE notes SET isStarred = :isStarred, updatedAt = :updatedAt WHERE id = :id")
     suspend fun setStarred(id: Long, isStarred: Boolean, updatedAt: Long = System.currentTimeMillis())
 }

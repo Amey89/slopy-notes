@@ -78,6 +78,21 @@ interface TaskDao {
     @Query("DELETE FROM tasks WHERE id = :id")
     suspend fun deleteTaskById(id: Long)
 
+    @Query("DELETE FROM tasks")
+    suspend fun deleteAllTasks()
+
+    @Query("DELETE FROM tasks WHERE isCompleted = 1")
+    suspend fun deleteCompletedTasks()
+
+    @Query("DELETE FROM tasks WHERE isCompleted = 0")
+    suspend fun deletePendingTasks()
+
+    @Query("DELETE FROM tasks WHERE isStarred = 1")
+    suspend fun deleteStarredTasks()
+
+    @Query("DELETE FROM subtasks")
+    suspend fun deleteAllSubtasks()
+
     @Query("UPDATE tasks SET isCompleted = :isCompleted, updatedAt = :updatedAt WHERE id = :id")
     suspend fun setTaskCompleted(id: Long, isCompleted: Boolean, updatedAt: Long = System.currentTimeMillis())
 

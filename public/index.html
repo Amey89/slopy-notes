@@ -751,6 +751,97 @@
       opacity: 1;
     }
 
+    /* Subfolder & Action buttons styling */
+    .folder-actions-row {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .folder-btn-action {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 3px 5px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .folder-btn-action:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+    }
+
+    .subfolder-item {
+      padding-left: 28px !important;
+      font-size: 0.85rem !important;
+      border-left: 2px solid var(--border-color);
+      margin-left: 14px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important;
+    }
+
+    /* Rich Editor Formatting Toolbar */
+    .editor-toolbar {
+      display: flex;
+      gap: 6px;
+      padding: 6px 8px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      border-bottom: none;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      flex-wrap: wrap;
+    }
+
+    .tool-btn {
+      background: none;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .tool-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+
+    .editor-with-toolbar {
+      border-top-left-radius: 0 !important;
+      border-top-right-radius: 0 !important;
+    }
+
+    /* Quick Tag chips in editor */
+    .quick-tags-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .quick-tag-chip {
+      font-size: 0.72rem;
+      background: var(--bg-surface-elevated);
+      color: var(--text-secondary);
+      padding: 2px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      transition: all 0.15s;
+    }
+
+    .quick-tag-chip:hover {
+      color: var(--primary);
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
     /* Responsive */
     @media (max-width: 800px) {
       .sidebar {
@@ -900,11 +991,17 @@
           🔄 Sync
         </button>
 
-        <button class="btn btn-primary" onclick="openCreateNoteModal()">
+        <button class="btn btn-primary" onclick="openCreateNoteModal()" title="Create New Note">
           + Note
         </button>
-        <button class="btn btn-success" onclick="openCreateTaskModal()">
+        <button class="btn btn-success" onclick="openCreateTaskModal()" title="Create New Task">
           + Task
+        </button>
+        <button class="btn btn-secondary" onclick="openCreateFolderModal(null)" title="Create New Folder">
+          + Folder
+        </button>
+        <button class="btn btn-secondary" id="btnTopAddSubfolder" onclick="openCreateSubfolderFromCurrent()" style="display:none;" title="Create Subfolder in current folder">
+          + Subfolder
         </button>
       </div>
     </header>
@@ -953,38 +1050,66 @@
 <div class="modal-backdrop" id="noteModal">
   <div class="modal-card">
     <div class="modal-header">
-      <h3 class="modal-title" id="noteModalTitle">Create Note</h3>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:1.3rem;">📝</span>
+        <h3 class="modal-title" id="noteModalTitle">Create Note</h3>
+      </div>
       <button class="btn-icon" onclick="closeModal('noteModal')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Title</label>
-        <input type="text" class="form-input" id="noteInputTitle" placeholder="Note title...">
+        <input type="text" class="form-input" id="noteInputTitle" placeholder="Note title..." style="font-size:1.05rem; font-weight:600;">
       </div>
       <div class="form-group">
-        <label class="form-label">Content</label>
-        <textarea class="form-textarea" id="noteInputContent" placeholder="Write your thoughts or paste links..."></textarea>
+        <label class="form-label">Content (Markdown supported)</label>
+        <!-- Rich Markdown Formatting Toolbar -->
+        <div class="editor-toolbar">
+          <button type="button" class="tool-btn" onclick="insertNoteMarkdown('**', '**')" title="Bold"><strong>B</strong></button>
+          <button type="button" class="tool-btn" onclick="insertNoteMarkdown('*', '*')" title="Italic"><em>I</em></button>
+          <button type="button" class="tool-btn" onclick="insertNoteMarkdown('### ', '')" title="Header">H</button>
+          <button type="button" class="tool-btn" onclick="insertNoteMarkdown('- ', '')" title="Bullet List">• List</button>
+          <button type="button" class="tool-btn" onclick="insertNoteMarkdown('[', '](https://)')" title="Insert Link">🔗 Link</button>
+          <button type="button" class="tool-btn" onclick="insertNoteMarkdown('`', '`')" title="Code">`code`</button>
+          <button type="button" class="tool-btn" onclick="insertNoteMarkdown('> ', '')" title="Quote">” Quote</button>
+        </div>
+        <textarea class="form-textarea editor-with-toolbar" id="noteInputContent" placeholder="Write your thoughts, ideas, checklists or paste links..."></textarea>
       </div>
+
+      <div style="display:flex; gap:12px;">
+        <div class="form-group" style="flex:1;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="form-label">Folder Location</label>
+            <button type="button" class="folder-btn-action" onclick="openCreateFolderModal(null)" style="color:var(--primary); font-size:0.75rem;">+ New Folder</button>
+          </div>
+          <select class="form-select" id="noteSelectFolder">
+            <option value="">No Folder (Root)</option>
+            <option value="-998">📁 Shared Links (Permanent)</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">Color Accent</label>
+          <div class="color-picker-row" id="noteColorPicker" style="margin-top:4px;">
+            <div class="color-swatch active" style="background:#94a3b8;" onclick="selectNoteColor(0, this)" title="Default Gray"></div>
+            <div class="color-swatch" style="background:#ef4444;" onclick="selectNoteColor(1, this)" title="Coral Red"></div>
+            <div class="color-swatch" style="background:#10b981;" onclick="selectNoteColor(2, this)" title="Emerald Green"></div>
+            <div class="color-swatch" style="background:#3b82f6;" onclick="selectNoteColor(3, this)" title="Ocean Blue"></div>
+            <div class="color-swatch" style="background:#a855f7;" onclick="selectNoteColor(4, this)" title="Purple Violet"></div>
+            <div class="color-swatch" style="background:#f59e0b;" onclick="selectNoteColor(5, this)" title="Warm Amber"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="form-group">
         <label class="form-label">Tags (comma separated)</label>
-        <input type="text" class="form-input" id="noteInputTags" placeholder="work, ideas, links...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Folder</label>
-        <select class="form-select" id="noteSelectFolder">
-          <option value="">No Folder (Root)</option>
-          <option value="-998">📁 Shared Links (Permanent)</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Color Accent</label>
-        <div class="color-picker-row" id="noteColorPicker">
-          <div class="color-swatch active" style="background:#94a3b8;" onclick="selectNoteColor(0, this)"></div>
-          <div class="color-swatch" style="background:#ef4444;" onclick="selectNoteColor(1, this)"></div>
-          <div class="color-swatch" style="background:#10b981;" onclick="selectNoteColor(2, this)"></div>
-          <div class="color-swatch" style="background:#3b82f6;" onclick="selectNoteColor(3, this)"></div>
-          <div class="color-swatch" style="background:#a855f7;" onclick="selectNoteColor(4, this)"></div>
-          <div class="color-swatch" style="background:#f59e0b;" onclick="selectNoteColor(5, this)"></div>
+        <input type="text" class="form-input" id="noteInputTags" placeholder="work, ideas, links, projects...">
+        <div class="quick-tags-row">
+          <span style="font-size:0.75rem; color:var(--text-muted); align-self:center;">Quick:</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('noteInputTags', 'work')">+work</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('noteInputTags', 'personal')">+personal</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('noteInputTags', 'ideas')">+ideas</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('noteInputTags', 'urgent')">+urgent</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('noteInputTags', 'project')">+project</span>
         </div>
       </div>
     </div>
@@ -999,29 +1124,35 @@
 <div class="modal-backdrop" id="taskModal">
   <div class="modal-card">
     <div class="modal-header">
-      <h3 class="modal-title" id="taskModalTitle">Create Task</h3>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:1.3rem;">✅</span>
+        <h3 class="modal-title" id="taskModalTitle">Create Task</h3>
+      </div>
       <button class="btn-icon" onclick="closeModal('taskModal')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Task Title</label>
-        <input type="text" class="form-input" id="taskInputTitle" placeholder="What needs to be done?">
+        <input type="text" class="form-input" id="taskInputTitle" placeholder="What needs to be done?" style="font-size:1.05rem; font-weight:600;">
       </div>
       <div class="form-group">
-        <label class="form-label">Description / Notes</label>
-        <textarea class="form-textarea" style="min-height:70px;" id="taskInputDescription" placeholder="Optional details..."></textarea>
+        <label class="form-label">Description / Detailed Notes</label>
+        <textarea class="form-textarea" style="min-height:75px;" id="taskInputDescription" placeholder="Optional context, steps, or requirements..."></textarea>
       </div>
       <div style="display:flex; gap:12px;">
         <div class="form-group" style="flex:1;">
           <label class="form-label">Priority</label>
           <select class="form-select" id="taskSelectPriority">
-            <option value="1">Low Priority</option>
-            <option value="2">Medium Priority</option>
-            <option value="3">High Priority</option>
+            <option value="1">🟢 Low Priority</option>
+            <option value="2" selected>🟡 Medium Priority</option>
+            <option value="3">🔴 High Priority</option>
           </select>
         </div>
         <div class="form-group" style="flex:1;">
-          <label class="form-label">Folder</label>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="form-label">Folder Location</label>
+            <button type="button" class="folder-btn-action" onclick="openCreateFolderModal(null)" style="color:var(--primary); font-size:0.75rem;">+ New Folder</button>
+          </div>
           <select class="form-select" id="taskSelectFolder">
             <option value="">No Folder (Root)</option>
             <option value="-999">📁 Completed Tasks (Permanent)</option>
@@ -1029,19 +1160,26 @@
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Due Date</label>
+        <label class="form-label">Due Date & Time</label>
         <input type="datetime-local" class="form-input" id="taskInputDueDate">
       </div>
       <div class="form-group">
         <label class="form-label">Tags (comma separated)</label>
-        <input type="text" class="form-input" id="taskInputTags" placeholder="todo, urgent, home...">
+        <input type="text" class="form-input" id="taskInputTags" placeholder="todo, urgent, home, sprint...">
+        <div class="quick-tags-row">
+          <span style="font-size:0.75rem; color:var(--text-muted); align-self:center;">Quick:</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('taskInputTags', 'todo')">+todo</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('taskInputTags', 'urgent')">+urgent</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('taskInputTags', 'work')">+work</span>
+          <span class="quick-tag-chip" onclick="appendTagToInput('taskInputTags', 'review')">+review</span>
+        </div>
       </div>
       <!-- Subtasks -->
       <div class="form-group">
-        <label class="form-label">Subtasks Checklist</label>
+        <label class="form-label">Subtasks & Checklist</label>
         <div style="display:flex; gap:8px;">
-          <input type="text" class="form-input" id="subtaskDraftInput" placeholder="Add subtask...">
-          <button class="btn btn-secondary" onclick="addDraftSubtask()">Add</button>
+          <input type="text" class="form-input" id="subtaskDraftInput" placeholder="Add subtask item..." onkeydown="if(event.key==='Enter'){event.preventDefault();addDraftSubtask();}">
+          <button type="button" class="btn btn-secondary" onclick="addDraftSubtask()">+ Add</button>
         </div>
         <div class="subtasks-box" id="modalSubtasksList" style="margin-top:8px;"></div>
       </div>
@@ -1053,22 +1191,34 @@
   </div>
 </div>
 
-<!-- Folder Modal -->
+<!-- Folder Modal (Supports creating root folders or subfolders) -->
 <div class="modal-backdrop" id="folderModal">
-  <div class="modal-card" style="max-width:440px;">
+  <div class="modal-card" style="max-width:460px;">
     <div class="modal-header">
-      <h3 class="modal-title">Create Folder</h3>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:1.3rem;">📁</span>
+        <h3 class="modal-title" id="folderModalTitle">Create Folder</h3>
+      </div>
       <button class="btn-icon" onclick="closeModal('folderModal')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Folder Name</label>
-        <input type="text" class="form-input" id="folderInputName" placeholder="e.g. Work, Personal, Travel">
+        <input type="text" class="form-input" id="folderInputName" placeholder="e.g. Work, Personal, Finances, Projects" style="font-size:1rem; font-weight:600;">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Parent Folder (Select for Subfolder)</label>
+        <select class="form-select" id="folderSelectParent">
+          <option value="">None (Top-Level Root Folder)</option>
+        </select>
+        <span style="font-size:0.75rem; color:var(--text-muted);">
+          Select an existing folder above to create a nested subfolder.
+        </span>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('folderModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveFolder()">Create Folder</button>
+      <button class="btn btn-primary" onclick="saveFolder()">Save Folder</button>
     </div>
   </div>
 </div>
@@ -1309,29 +1459,44 @@ function renderNavigation() {
   document.getElementById('countCompletedTasks').textContent = completedTasksCount;
   document.getElementById('countSharedLinks').textContent = sharedLinksCount;
 
-  // Custom folders
+  // Custom folders & Subfolders tree
   const listEl = document.getElementById('customFoldersList');
   listEl.innerHTML = '';
 
-  state.folders.forEach(f => {
-    if (f.id === PERMA_COMPLETED_TASKS_ID || f.id === PERMA_SHARED_LINKS_ID) return;
-    const count = state.notes.filter(n => n.folderId === f.id).length + state.tasks.filter(t => t.folderId === f.id).length;
-    
-    const div = document.createElement('button');
-    div.className = `nav-item ${currentNav === 'folder' && currentFolderId === f.id ? 'active' : ''}`;
-    div.onclick = () => setNavView('folder', f.id);
-    div.innerHTML = `
-      <div class="nav-item-content">
-        <span class="nav-icon">📁</span>
-        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;">${escapeHtml(f.name)}</span>
-      </div>
-      <div style="display:flex; align-items:center; gap:6px;">
-        <span class="nav-counter">${count}</span>
-        <span onclick="event.stopPropagation(); deleteFolder(${f.id})" style="font-size:0.75rem; color:var(--text-muted); cursor:pointer;" title="Delete folder">✕</span>
-      </div>
-    `;
-    listEl.appendChild(div);
+  const rootFolders = state.folders.filter(f => 
+    f.id !== PERMA_COMPLETED_TASKS_ID && 
+    f.id !== PERMA_SHARED_LINKS_ID && 
+    (!f.parentFolderId || f.parentFolderId === null)
+  );
+
+  rootFolders.forEach(f => {
+    renderFolderNavItem(f, listEl, false);
+    // Find any direct subfolders
+    const subfolders = state.folders.filter(sub => sub.parentFolderId === f.id);
+    subfolders.forEach(sub => {
+      renderFolderNavItem(sub, listEl, true);
+    });
   });
+}
+
+function renderFolderNavItem(f, containerEl, isSubfolder = false) {
+  const count = state.notes.filter(n => n.folderId === f.id).length + state.tasks.filter(t => t.folderId === f.id).length;
+  
+  const div = document.createElement('button');
+  div.className = `nav-item ${isSubfolder ? 'subfolder-item' : ''} ${currentNav === 'folder' && currentFolderId === f.id ? 'active' : ''}`;
+  div.onclick = () => setNavView('folder', f.id);
+  div.innerHTML = `
+    <div class="nav-item-content">
+      <span class="nav-icon">${isSubfolder ? '↳ 📁' : '📁'}</span>
+      <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:${isSubfolder ? '110px' : '130px'};">${escapeHtml(f.name)}</span>
+    </div>
+    <div class="folder-actions-row">
+      <span class="nav-counter">${count}</span>
+      ${!isSubfolder ? `<span class="folder-btn-action" onclick="event.stopPropagation(); openCreateFolderModal(${f.id})" title="Add Subfolder" style="font-weight:bold;">+</span>` : ''}
+      <span class="folder-btn-action" onclick="event.stopPropagation(); deleteFolder(${f.id})" title="Delete folder" style="color:var(--danger);">✕</span>
+    </div>
+  `;
+  containerEl.appendChild(div);
 }
 
 function renderItems() {
@@ -1803,6 +1968,41 @@ function removeDraftSubtask(idx) {
   renderDraftSubtasks();
 }
 
+// Helper for Markdown Toolbar
+function insertNoteMarkdown(prefix, suffix) {
+  const textarea = document.getElementById('noteInputContent');
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const selText = textarea.value.substring(start, end);
+  const replacement = prefix + (selText || (prefix === '### ' ? 'Heading' : 'text')) + suffix;
+  textarea.value = textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
+  textarea.focus();
+  textarea.selectionStart = start + prefix.length;
+  textarea.selectionEnd = start + replacement.length - suffix.length;
+}
+
+function appendTagToInput(inputId, tag) {
+  const input = document.getElementById(inputId);
+  const current = input.value.trim();
+  const cleanTag = tag.trim().replace(/^#/, '');
+  if (!current) {
+    input.value = cleanTag;
+  } else {
+    const tags = current.split(',').map(t => t.trim());
+    if (!tags.includes(cleanTag)) {
+      input.value = current + ', ' + cleanTag;
+    }
+  }
+}
+
+function openCreateSubfolderFromCurrent() {
+  if (currentNav === 'folder' && currentFolderId !== null && currentFolderId !== PERMA_COMPLETED_TASKS_ID && currentFolderId !== PERMA_SHARED_LINKS_ID) {
+    openCreateFolderModal(currentFolderId);
+  } else {
+    openCreateFolderModal(null);
+  }
+}
+
 // ================= FOLDERS =================
 
 function populateFolderDropdown(selectId) {
@@ -1815,45 +2015,93 @@ function populateFolderDropdown(selectId) {
     select.innerHTML += '<option value="-999">📁 Completed Tasks (Permanent)</option>';
   }
 
-  state.folders.forEach(f => {
-    if (f.id === PERMA_COMPLETED_TASKS_ID || f.id === PERMA_SHARED_LINKS_ID) return;
+  // Display hierarchy with indent in select dropdowns
+  const rootFolders = state.folders.filter(f => 
+    f.id !== PERMA_COMPLETED_TASKS_ID && 
+    f.id !== PERMA_SHARED_LINKS_ID && 
+    (!f.parentFolderId || f.parentFolderId === null)
+  );
+
+  rootFolders.forEach(f => {
     const opt = document.createElement('option');
     opt.value = f.id;
     opt.textContent = `📁 ${f.name}`;
     select.appendChild(opt);
+
+    // Subfolders
+    const subfolders = state.folders.filter(s => s.parentFolderId === f.id);
+    subfolders.forEach(sub => {
+      const subOpt = document.createElement('option');
+      subOpt.value = sub.id;
+      subOpt.textContent = `　↳ 📁 ${sub.name}`;
+      select.appendChild(subOpt);
+    });
   });
 }
 
-function openCreateFolderModal() {
+function openCreateFolderModal(parentFolderId = null) {
   document.getElementById('folderInputName').value = '';
+  
+  // Populate parent folder dropdown
+  const parentSelect = document.getElementById('folderSelectParent');
+  parentSelect.innerHTML = '<option value="">None (Top-Level Root Folder)</option>';
+  
+  state.folders.forEach(f => {
+    if (f.id === PERMA_COMPLETED_TASKS_ID || f.id === PERMA_SHARED_LINKS_ID) return;
+    if (f.parentFolderId && f.parentFolderId !== null) return; // Prevent 3+ level depth
+    const opt = document.createElement('option');
+    opt.value = f.id;
+    opt.textContent = `📁 ${f.name}`;
+    parentSelect.appendChild(opt);
+  });
+
+  if (parentFolderId !== null) {
+    parentSelect.value = parentFolderId;
+    document.getElementById('folderModalTitle').textContent = 'Create Subfolder';
+  } else {
+    parentSelect.value = '';
+    document.getElementById('folderModalTitle').textContent = 'Create Folder';
+  }
+
   openModal('folderModal');
 }
 
 function saveFolder() {
   const name = document.getElementById('folderInputName').value.trim();
   if (!name) return;
+  const parentVal = document.getElementById('folderSelectParent').value;
+  const parentFolderId = parentVal !== '' ? parseInt(parentVal, 10) : null;
   const newId = Date.now();
+
   state.folders.push({
     id: newId,
     name,
-    parentFolderId: null,
+    parentFolderId: parentFolderId,
     colorIndex: 0,
     createdAt: Date.now()
   });
+
   saveLocalState();
   renderNavigation();
   closeModal('folderModal');
-  showToast('Folder created ✓');
+  showToast(parentFolderId ? 'Subfolder created ✓' : 'Folder created ✓');
   triggerAutoCloudSync();
 }
 
 function deleteFolder(id) {
   if (!confirm('Delete this folder? Items inside will remain in root view.')) return;
-  state.folders = state.folders.filter(f => f.id !== id);
+  
+  // Also remove child subfolders
+  const childSubfolderIds = state.folders.filter(f => f.parentFolderId === id).map(f => f.id);
+  const allIdsToRemove = [id, ...childSubfolderIds];
+
+  state.folders = state.folders.filter(f => !allIdsToRemove.includes(f.id));
+  
   // Unassign from notes and tasks
-  state.notes.forEach(n => { if (n.folderId === id) n.folderId = null; });
-  state.tasks.forEach(t => { if (t.folderId === id) t.folderId = null; });
-  if (currentNav === 'folder' && currentFolderId === id) {
+  state.notes.forEach(n => { if (allIdsToRemove.includes(n.folderId)) n.folderId = null; });
+  state.tasks.forEach(t => { if (allIdsToRemove.includes(t.folderId)) t.folderId = null; });
+  
+  if (currentNav === 'folder' && allIdsToRemove.includes(currentFolderId)) {
     setNavView('all');
   } else {
     saveLocalState();
@@ -1870,6 +2118,16 @@ function setNavView(nav, folderId = null) {
   currentNav = nav;
   currentFolderId = folderId;
 
+  // Toggle Add Subfolder button in topbar if currently inside a folder
+  const btnSub = document.getElementById('btnTopAddSubfolder');
+  if (btnSub) {
+    if (nav === 'folder' && folderId !== null && folderId !== PERMA_COMPLETED_TASKS_ID && folderId !== PERMA_SHARED_LINKS_ID) {
+      btnSub.style.display = 'inline-flex';
+    } else {
+      btnSub.style.display = 'none';
+    }
+  }
+
   // Update title
   const titleEl = document.getElementById('pageTitleText');
   if (nav === 'all') titleEl.innerHTML = '📑 All Items';
@@ -1883,7 +2141,13 @@ function setNavView(nav, folderId = null) {
       titleEl.innerHTML = '<span class="perma-folder-badge folder-links-dot"></span> Shared Links';
     } else {
       const f = state.folders.find(x => x.id === folderId);
-      titleEl.innerHTML = `📁 ${f ? escapeHtml(f.name) : 'Folder'}`;
+      const isSub = f && f.parentFolderId && f.parentFolderId !== null;
+      const parent = isSub ? state.folders.find(p => p.id === f.parentFolderId) : null;
+      if (parent) {
+        titleEl.innerHTML = `<span style="opacity:0.6; cursor:pointer;" onclick="setNavView('folder', ${parent.id})">📁 ${escapeHtml(parent.name)}</span> / 📁 ${escapeHtml(f.name)}`;
+      } else {
+        titleEl.innerHTML = `📁 ${f ? escapeHtml(f.name) : 'Folder'}`;
+      }
     }
   }
 

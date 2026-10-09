@@ -21,6 +21,9 @@ interface TagDao {
     @Query("DELETE FROM custom_tags WHERE name = :name")
     suspend fun deleteTag(name: String)
 
+    @Query("DELETE FROM custom_tags")
+    suspend fun deleteAllTags()
+
     @Query("SELECT COUNT(*) FROM custom_tags")
     suspend fun getTagCount(): Int
 }

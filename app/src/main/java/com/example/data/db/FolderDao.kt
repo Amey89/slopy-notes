@@ -42,6 +42,18 @@ interface FolderDao {
     @Query("DELETE FROM folders WHERE id = :folderId")
     suspend fun deleteFolder(folderId: Long)
 
+    @Query("DELETE FROM folders WHERE id != -999 AND id != -998")
+    suspend fun deleteAllCustomFolders()
+
+    @Query("DELETE FROM folders")
+    suspend fun deleteAllFolders()
+
+    @Query("DELETE FROM note_folder_cross_ref")
+    suspend fun deleteAllNoteCrossRefs()
+
+    @Query("DELETE FROM task_folder_cross_ref")
+    suspend fun deleteAllTaskCrossRefs()
+
     @Query("DELETE FROM folders WHERE parentFolderId = :folderId")
     suspend fun deleteSubfolders(folderId: Long)
 
