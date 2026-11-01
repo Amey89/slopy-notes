@@ -2,69 +2,69 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Light Scheme Colors - Passive, grounded, zero neon/glow aesthetic
-val PrimaryLight = Color(0xFF2E3A48)       // Deep Charcoal Slate (calm, non-neon)
+// Material 3 Expressive Light Palette — Vibrant Iris Indigo + Coral Tertiary + Mint Secondary
+val PrimaryLight = Color(0xFF4F46E5)           // Expressive Iris Indigo
 val OnPrimaryLight = Color(0xFFFFFFFF)
-val PrimaryContainerLight = Color(0xFFE2E8F0) // Soft muted slate
-val OnPrimaryContainerLight = Color(0xFF1E293B)
+val PrimaryContainerLight = Color(0xFFE0E7FF)  // Rich Tonal Indigo Container
+val OnPrimaryContainerLight = Color(0xFF1E1B4B)
 
-val SecondaryLight = Color(0xFF4A5568)     // Subtle muted slate blue
+val SecondaryLight = Color(0xFF0D9488)         // Expressive Teal Mint
 val OnSecondaryLight = Color(0xFFFFFFFF)
-val SecondaryContainerLight = Color(0xFFEDF2F7)
-val OnSecondaryContainerLight = Color(0xFF2D3748)
+val SecondaryContainerLight = Color(0xFFCCFBF1)
+val OnSecondaryContainerLight = Color(0xFF134E4A)
 
-val TertiaryLight = Color(0xFF6B5B4D)      // Earthy warm stone
+val TertiaryLight = Color(0xFFE11D48)          // Expressive Rose Coral
 val OnTertiaryLight = Color(0xFFFFFFFF)
-val TertiaryContainerLight = Color(0xFFF5EFEB)
-val OnTertiaryContainerLight = Color(0xFF382E25)
+val TertiaryContainerLight = Color(0xFFFFE4E6)
+val OnTertiaryContainerLight = Color(0xFF881337)
 
-val BackgroundLight = Color(0xFFF9FAFB)    // Clean flat off-white
-val OnBackgroundLight = Color(0xFF111827)
+val BackgroundLight = Color(0xFFF8F9FE)        // Soft Tonal Iris-White Canvas
+val OnBackgroundLight = Color(0xFF0F172A)
 val SurfaceLight = Color(0xFFFFFFFF)
-val OnSurfaceLight = Color(0xFF111827)
-val SurfaceVariantLight = Color(0xFFF1F5F9)
-val OnSurfaceVariantLight = Color(0xFF64748B)
-val OutlineLight = Color(0xFFE2E8F0)
+val OnSurfaceLight = Color(0xFF0F172A)
+val SurfaceVariantLight = Color(0xFFEEF2FF)    // Expressive Tonal Surface Variant
+val OnSurfaceVariantLight = Color(0xFF475569)
+val OutlineLight = Color(0xFFCBD5E1)
 
-// Dark Scheme Colors - Deep graphite/slate voids, zero neon/purple glow
-val PrimaryDark = Color(0xFF94A3B8)        // Passive soft pewter/slate
-val OnPrimaryDark = Color(0xFF0F172A)
-val PrimaryContainerDark = Color(0xFF273546)
-val OnPrimaryContainerDark = Color(0xFFE2E8F0)
+// Material 3 Expressive Dark Palette — Deep Cosmic Indigo + Electric Periwinkle + Mint & Rose Accents
+val PrimaryDark = Color(0xFF818CF8)            // Electric Periwinkle Indigo
+val OnPrimaryDark = Color(0xFF1E1B4B)
+val PrimaryContainerDark = Color(0xFF312E81)   // Deep Tonal Indigo Container
+val OnPrimaryContainerDark = Color(0xFFE0E7FF)
 
-val SecondaryDark = Color(0xFF8896A6)      // Muted steel
-val OnSecondaryDark = Color(0xFF0F172A)
-val SecondaryContainerDark = Color(0xFF1E293B)
-val OnSecondaryContainerDark = Color(0xFFCBD5E1)
+val SecondaryDark = Color(0xFF2DD4BF)          // Expressive Aqua Mint
+val OnSecondaryDark = Color(0xFF042F2E)
+val SecondaryContainerDark = Color(0xFF115E59)
+val OnSecondaryContainerDark = Color(0xFFCCFBF1)
 
-val TertiaryDark = Color(0xFFB5A492)       // Muted warm stone
-val OnTertiaryDark = Color(0xFF2E261E)
-val TertiaryContainerDark = Color(0xFF382F26)
-val OnTertiaryContainerDark = Color(0xFFF5EFEB)
+val TertiaryDark = Color(0xFFFB7185)           // Expressive Coral Rose
+val OnTertiaryDark = Color(0xFF4C0519)
+val TertiaryContainerDark = Color(0xFF881337)
+val OnTertiaryContainerDark = Color(0xFFFFE4E6)
 
-val BackgroundDark = Color(0xFF12161C)     // Calm flat dark graphite
+val BackgroundDark = Color(0xFF0B0E17)         // Deep Expressive Midnight Canvas
 val OnBackgroundDark = Color(0xFFF1F5F9)
-val SurfaceDark = Color(0xFF181F28)        // Slate charcoal
-val OnSurfaceDark = Color(0xFFF1F5F9)
-val SurfaceVariantDark = Color(0xFF222B36)
+val SurfaceDark = Color(0xFF131826)            // Elevated Tonal Surface
+val OnSurfaceDark = Color(0xFFF8FAFC)
+val SurfaceVariantDark = Color(0xFF1E263B)     // Expressive Tonal Container
 val OnSurfaceVariantDark = Color(0xFF94A3B8)
-val OutlineDark = Color(0xFF2E3846)
+val OutlineDark = Color(0xFF334155)
 
-// Note Card Accent Colors - Soft, muted, organic paper/earth tones (no neon)
+// Material 3 Expressive Note Card Tonal Palettes
 val NoteAccentColorsLight = listOf(
-    Color(0xFFFFFFFF), // 0: Pure clean white
-    Color(0xFFF6F3ED), // 1: Soft warm oat
-    Color(0xFFEFF4F0), // 2: Soft pale sage
-    Color(0xFFEDF2F7), // 3: Soft muted slate
-    Color(0xFFF7EFEF), // 4: Soft pale clay
-    Color(0xFFEEF3F5)  // 5: Soft misty mineral
+    Color(0xFFFFFFFF), // 0: Pure Tonal Surface
+    Color(0xFFFEF3C7), // 1: Expressive Buttercup Amber
+    Color(0xFFD1FAE5), // 2: Expressive Mint Sage
+    Color(0xFFE0E7FF), // 3: Expressive Periwinkle Iris
+    Color(0xFFFFE4E6), // 4: Expressive Blossom Rose
+    Color(0xFFE0F2FE)  // 5: Expressive Sky Cyan
 )
 
 val NoteAccentColorsDark = listOf(
-    Color(0xFF181F28), // 0: Default flat slate
-    Color(0xFF26221D), // 1: Deep warm oat
-    Color(0xFF1B2621), // 2: Deep pale sage
-    Color(0xFF1E252F), // 3: Deep muted slate
-    Color(0xFF271F22), // 4: Deep clay
-    Color(0xFF1C2528)  // 5: Deep mineral
+    Color(0xFF131826), // 0: Default Tonal Surface
+    Color(0xFF2D2310), // 1: Expressive Deep Amber
+    Color(0xFF0F2922), // 2: Expressive Deep Mint
+    Color(0xFF1E1E3F), // 3: Expressive Deep Iris
+    Color(0xFF2E1621), // 4: Expressive Deep Rose
+    Color(0xFF102638)  // 5: Expressive Deep Cyan
 )

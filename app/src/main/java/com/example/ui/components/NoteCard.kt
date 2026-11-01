@@ -56,20 +56,20 @@ import com.example.ui.theme.NoteAccentColorsLight
 import java.io.File
 
 // Top-level static constants to prevent object allocations during 120Hz fast scrolling
-private val NoteCardShape = RoundedCornerShape(18.dp)
-private val SharedLinkBadgeShape = RoundedCornerShape(8.dp)
-private val HeroImageShape = RoundedCornerShape(12.dp)
-private val ThumbnailShape = RoundedCornerShape(10.dp)
-private val UrlPillShape = RoundedCornerShape(8.dp)
+private val NoteCardShape = RoundedCornerShape(26.dp)
+private val SharedLinkBadgeShape = RoundedCornerShape(12.dp)
+private val HeroImageShape = RoundedCornerShape(18.dp)
+private val ThumbnailShape = RoundedCornerShape(14.dp)
+private val UrlPillShape = RoundedCornerShape(50)
+private val ActionPillShape = RoundedCornerShape(14.dp)
 private val SharedLinkBorder = BorderStroke(1.5.dp, Color(0xFF2563EB).copy(alpha = 0.55f))
 
 private val CLEAN_MARKDOWN_REGEX = Regex("[#*`_~>\\[\\]]")
 
 /**
- * 120Hz Smooth Scrolling Optimized NoteCard.
+ * 120Hz Smooth Scrolling Optimized NoteCard — Material 3 Expressive Edition.
  * Uses pre-computed [NoteUiItem] where all string splitting, regex parsing,
  * URL extraction, and date formatting are done off the main thread.
- * Lambdas and models are stable to ensure Compose skips recomposition entirely.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -88,9 +88,13 @@ fun NoteCard(
     val context = LocalContext.current
 
     val outlineVariantColor = MaterialTheme.colorScheme.outlineVariant
-    val cardBorder = remember(uiItem.isSharedLinkNote, outlineVariantColor) {
-        if (uiItem.isSharedLinkNote) SharedLinkBorder
-        else BorderStroke(1.dp, outlineVariantColor.copy(alpha = 0.45f))
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val cardBorder = remember(uiItem.isSharedLinkNote, note.isStarred, outlineVariantColor, primaryColor) {
+        when {
+            uiItem.isSharedLinkNote -> SharedLinkBorder
+            note.isStarred -> BorderStroke(1.5.dp, Color(0xFFF59E0B).copy(alpha = 0.55f))
+            else -> BorderStroke(1.dp, outlineVariantColor.copy(alpha = 0.55f))
+        }
     }
 
     val onCardClick = remember(onClick, note) { { onClick(note) } }
@@ -102,16 +106,16 @@ fun NoteCard(
         modifier = modifier.fillMaxWidth(),
         shape = NoteCardShape,
         colors = CardDefaults.cardColors(containerColor = cardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (performanceMode) 0.dp else 1.dp),
         border = cardBorder
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 18.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Top Row: Title (with Link badge if shared) + Star button + Delete icon
+            // Top Row: Title (with Link badge if shared) + Expressive Tonal Star & Delete Pills
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -124,23 +128,23 @@ fun NoteCard(
                     if (uiItem.isSharedLinkNote) {
                         Box(
                             modifier = Modifier
-                                .size(28.dp)
-                                .background(Color(0xFF2563EB).copy(alpha = 0.15f), SharedLinkBadgeShape),
+                                .size(32.dp)
+                                .background(Color(0xFF2563EB).copy(alpha = 0.16f), SharedLinkBadgeShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Link,
                                 contentDescription = null,
                                 tint = Color(0xFF2563EB),
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(17.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                     }
                     Text(
                         text = uiItem.displayTitle,
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onSurface
                         ),
                         maxLines = 1,
@@ -148,29 +152,53 @@ fun NoteCard(
                     )
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
                     IconButton(
                         onClick = onStarClick,
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            imageVector = if (note.isStarred) Icons.Default.Star else Icons.Default.StarBorder,
-                            contentDescription = if (note.isStarred) "Unstar" else "Star",
-                            tint = if (note.isStarred) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(26.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(
+                                    if (note.isStarred) Color(0xFFF59E0B).copy(alpha = 0.18f)
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                    ActionPillShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (note.isStarred) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = if (note.isStarred) "Unstar" else "Star",
+                                tint = if (note.isStarred) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
 
                     IconButton(
                         onClick = onDeleteClick,
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteOutline,
-                            contentDescription = "Delete note",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                    ActionPillShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteOutline,
+                                contentDescription = "Delete note",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
                     }
                 }
             }

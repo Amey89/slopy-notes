@@ -101,7 +101,7 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    // Active Tag Filter in Search / Filter bar
+    // Active Tag Filter in Search / Filter bar (defaults to null on launch so app opens on All Vault Items)
     private val _selectedTagFilter = MutableStateFlow<String?>(null)
     val selectedTagFilter: StateFlow<String?> = _selectedTagFilter.asStateFlow()
 
@@ -113,13 +113,7 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
         _selectedTagFilter.value = tag
     }
 
-    init {
-        viewModelScope.launch {
-            repository.ensureDefaultTags()
-        }
-    }
-
-    // Search & Filter
+    // Search & Filter (defaults to SearchFilter.ALL on launch so app opens on All Vault Items)
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
@@ -140,7 +134,7 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
 
     val rootFolders: StateFlow<List<FolderEntity>> = allFolders.map { list ->
         list.filter { it.parentFolderId == null }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // High-performance pre-computed maps (Offloaded from UI thread)
     val folderNotesCountMap: StateFlow<Map<Long?, Int>> = repository.allNotes.map { notes ->
@@ -148,22 +142,35 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
         map[FolderEntity.SHARED_LINKS_FOLDER_ID] = notes.count { it.folderId == FolderEntity.SHARED_LINKS_FOLDER_ID }
         map
     }.flowOn(Dispatchers.Default)
-     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+     .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     val folderTasksCountMap: StateFlow<Map<Long?, Int>> = repository.allTasks.map { tasks ->
-        val map = tasks.groupBy { it.task.folderId }.mapValues { it.value.size }.toMutableMap()
+        val map = tasks.filter { !it.task.isCompleted }.groupBy { it.task.folderId }.mapValues { it.value.size }.toMutableMap()
         map[FolderEntity.COMPLETED_TASKS_FOLDER_ID] = tasks.count { it.task.isCompleted }
         map
     }.flowOn(Dispatchers.Default)
-     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+     .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     val subfoldersMap: StateFlow<Map<Long?, List<FolderEntity>>> = allFolders.map { folders ->
         folders.filter { it.parentFolderId != null }.groupBy { it.parentFolderId }
     }.flowOn(Dispatchers.Default)
-     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+     .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
+    // Always default to null (All Vault Items) when opening the app
     private val _selectedFolder = MutableStateFlow<FolderEntity?>(null)
     val selectedFolder: StateFlow<FolderEntity?> = _selectedFolder.asStateFlow()
+
+    init {
+        // Clear any legacy saved folder/filter preferences so app always starts cleanly on All Vault Items
+        prefs.edit()
+            .remove("pref_selected_folder_id")
+            .remove("pref_active_filter")
+            .remove("pref_selected_tag_filter")
+            .apply()
+        viewModelScope.launch {
+            repository.ensureDefaultTags()
+        }
+    }
 
     fun selectFolder(folder: FolderEntity?) {
         _selectedFolder.value = folder
@@ -189,23 +196,23 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
             folders.filter { it.parentFolderId == selected.id }
         }
     }.flowOn(Dispatchers.Default)
-     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+     .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val noteFolders: StateFlow<List<FolderEntity>> = allFolders.map { list ->
         list.filter { it.folderType == "NOTE" }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val rootNoteFolders: StateFlow<List<FolderEntity>> = allFolders.map { list ->
         list.filter { it.parentFolderId == null && it.folderType == "NOTE" }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val taskFolders: StateFlow<List<FolderEntity>> = allFolders.map { list ->
         list.filter { it.folderType == "TASK" }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val rootTaskFolders: StateFlow<List<FolderEntity>> = allFolders.map { list ->
         list.filter { it.parentFolderId == null && it.folderType == "TASK" }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun navigateUpFolder() {
         val current = _selectedFolder.value ?: return
@@ -245,17 +252,17 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
 
     // Base all notes and all tasks (cached in memory for high-performance fluid filtering)
     val allNotes: StateFlow<List<NoteEntity>> = repository.allNotes
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val allTasks: StateFlow<List<TaskWithSubtasks>> = repository.allTasks
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // Starred items for Home Widget
     val starredNotes: StateFlow<List<NoteEntity>> = repository.starredNotes
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val starredTasks: StateFlow<List<TaskWithSubtasks>> = repository.starredTasks
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // Filtered Notes (Fast in-memory filtering, zero stutter)
     val notesList: StateFlow<List<NoteEntity>> = combine(
@@ -294,9 +301,10 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
             else -> emptyList()
         }
     }.flowOn(Dispatchers.Default)
-     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+     .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // Filtered Tasks (Fast in-memory filtering, zero stutter)
+    // Completed tasks are archived in COMPLETED_TASKS_FOLDER_ID and excluded from All Vault Items / normal folders
     val tasksList: StateFlow<List<TaskWithSubtasks>> = combine(
         allTasks,
         _selectedFolder,
@@ -308,10 +316,10 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
             when (folder.id) {
                 FolderEntity.COMPLETED_TASKS_FOLDER_ID -> tasks.filter { it.task.isCompleted }
                 FolderEntity.SHARED_LINKS_FOLDER_ID -> emptyList() // No tasks in shared links folder
-                else -> tasks.filter { it.task.folderId == folder.id }
+                else -> tasks.filter { it.task.folderId == folder.id && !it.task.isCompleted }
             }
         } else {
-            tasks
+            tasks.filter { !it.task.isCompleted }
         }
         val queryFiltered = if (query.isNotBlank()) {
             folderFiltered.filter { tws ->
@@ -335,7 +343,7 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
             else -> emptyList()
         }
     }.flowOn(Dispatchers.Default)
-     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+     .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // 120Hz Ultra-Fluid Pre-Computed UI Models (Offloaded to Dispatchers.Default)
     val noteUiItems: StateFlow<List<NoteUiItem>> = combine(
@@ -344,12 +352,18 @@ class NotesTasksViewModel(application: Application) : AndroidViewModel(applicati
     ) { notes, perfMode ->
         notes.map { it.toUiItem(perfMode) }
     }.flowOn(Dispatchers.Default)
-     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+     .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val taskUiItems: StateFlow<List<TaskUiItem>> = tasksList.map { tasks ->
         tasks.map { it.toUiItem() }
     }.flowOn(Dispatchers.Default)
-     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+     .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val isVaultLoaded: StateFlow<Boolean> = combine(
+        repository.allNotes,
+        repository.allTasks
+    ) { _, _ -> true }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     // Direct access for widget / notification deep links
     suspend fun getNoteDirect(id: Long): NoteEntity? = repository.getNoteDirect(id)

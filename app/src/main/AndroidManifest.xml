@@ -80,9 +80,10 @@
             </intent-filter>
         </receiver>
 
-        <!-- Launcher Home Screen AppWidget -->
+        <!-- Launcher Home Screen AppWidget (Configurable: Pure White / Warm Paper / Dark / OLED) -->
         <receiver
             android:name=".widget.NotesTasksAppWidget"
+            android:label="Notes &amp; Tasks"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -92,8 +93,26 @@
                 android:resource="@xml/notes_tasks_widget_info" />
         </receiver>
 
+        <!-- Dedicated White Themed Launcher Home Screen AppWidget -->
+        <receiver
+            android:name=".widget.WhiteNotesTasksAppWidget"
+            android:label="Notes &amp; Tasks (White)"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/notes_tasks_white_widget_info" />
+        </receiver>
+
         <service
             android:name=".widget.NotesTasksWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+
+        <service
+            android:name=".widget.NotesTasksWhiteWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
 

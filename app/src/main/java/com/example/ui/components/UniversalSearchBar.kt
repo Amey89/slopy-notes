@@ -156,7 +156,7 @@ fun UniversalSearchBar(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Search Input Bar
+        // Material 3 Expressive Capsule Search Bar
         OutlinedTextField(
             value = query,
             onValueChange = {
@@ -165,16 +165,37 @@ fun UniversalSearchBar(
                     isPopupOpen = true
                 }
             },
-            placeholder = { Text("Search notes, tasks, folders...", fontSize = 14.sp) },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = MaterialTheme.colorScheme.primary
+            placeholder = {
+                Text(
+                    "Search vault notes, tasks, folders...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
             },
+            leadingIcon = {
+                Box(
+                    modifier = Modifier
+                        .padding(start = 6.dp)
+                        .size(36.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                            RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
+            },
             trailingIcon = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(end = 4.dp)
+                ) {
                     if (query.isNotEmpty()) {
                         IconButton(
                             onClick = {
@@ -204,12 +225,12 @@ fun UniversalSearchBar(
                 }
             },
             singleLine = true,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(28.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -220,7 +241,7 @@ fun UniversalSearchBar(
                 }
         )
 
-        // Smooth-transitioned Dynamic-Height Search Popup Window
+        // Smooth-transitioned Dynamic-Height Search Popup Window (M3 Expressive 28.dp Container)
         AnimatedVisibility(
             visible = isPopupOpen,
             enter = if (performanceMode) androidx.compose.animation.EnterTransition.None else expandVertically(animationSpec = tween(180)) + fadeIn(animationSpec = tween(150)),
@@ -230,17 +251,17 @@ fun UniversalSearchBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 440.dp),
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(26.dp),
                 color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 0.dp,
-                tonalElevation = 0.dp,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                shadowElevation = 4.dp,
+                tonalElevation = 2.dp,
+                border = BorderStroke(1.2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.22f))
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .verticalScroll(scrollState)
-                        .padding(14.dp),
+                        .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     // Header inside popup
@@ -585,71 +606,66 @@ fun UniversalSearchBar(
             }
         }
 
-        // Filter Chips Row (LazyRow for fluid recycling and 60 FPS scrolling)
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            items(SearchFilter.entries, key = { it.name }) { filter ->
-                val isSelected = activeFilter == filter
-                FilterChip(
-                    selected = isSelected,
-                    onClick = { onFilterSelect(filter) },
-                    modifier = Modifier.height(38.dp),
-                    label = {
-                        Text(
-                            filter.label,
-                            fontSize = 13.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                        )
-                    },
-                    leadingIcon = {
-                        when (filter) {
-                            SearchFilter.ALL -> null
-                            SearchFilter.NOTES -> Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(16.dp))
-                            SearchFilter.TASKS -> Icon(Icons.Default.FormatListBulleted, contentDescription = null, modifier = Modifier.size(16.dp))
-                            SearchFilter.FOLDERS -> Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(16.dp))
-                            SearchFilter.REMINDERS -> Icon(Icons.Default.Alarm, contentDescription = null, modifier = Modifier.size(16.dp))
-                            SearchFilter.STARRED -> Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+        // Active Filter / Tag Indicator Strip (only visible when a non-default view or tag filter is active)
+        if (activeFilter != SearchFilter.ALL || selectedTagFilter != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (activeFilter != SearchFilter.ALL) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                        modifier = Modifier.clickable { onFilterSelect(SearchFilter.ALL) }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "View: ${activeFilter.label}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Reset view filter",
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(14.dp)
+                            )
                         }
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                )
-            }
+                    }
+                }
 
-            // Active Tag filter chip if any
-            if (selectedTagFilter != null) {
-                item(key = "active_tag_filter") {
+                if (selectedTagFilter != null) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .height(38.dp)
-                            .clickable { onSelectTagFilter(null) }
+                        modifier = Modifier.clickable { onSelectTagFilter(null) }
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 10.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.Default.LocalOffer,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(13.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(5.dp))
                             Text(
                                 text = "#$selectedTagFilter",
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(5.dp))
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Clear tag filter",
@@ -660,37 +676,7 @@ fun UniversalSearchBar(
                     }
                 }
             }
-
-            // Quick Tag Filter Chips
-            items(allTags, key = { "tag_${it.name}" }) { tagEntity ->
-                val isTagSelected = selectedTagFilter.equals(tagEntity.name, ignoreCase = true)
-                val tagColor = TagPaletteColors.getOrElse(tagEntity.colorIndex) { MaterialTheme.colorScheme.primary }
-                FilterChip(
-                    selected = isTagSelected,
-                    onClick = {
-                        onSelectTagFilter(if (isTagSelected) null else tagEntity.name)
-                    },
-                    modifier = Modifier.height(38.dp),
-                    label = {
-                        Text(
-                            text = "#${tagEntity.name}",
-                            fontSize = 13.sp,
-                            fontWeight = if (isTagSelected) FontWeight.Bold else FontWeight.Medium
-                        )
-                    },
-                    leadingIcon = {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .background(tagColor, CircleShape)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = tagColor.copy(alpha = 0.2f),
-                        selectedLabelColor = tagColor
-                    )
-                )
-            }
         }
     }
 }
+

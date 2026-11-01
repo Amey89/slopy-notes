@@ -35,11 +35,21 @@ sealed class StarredWidgetItem {
 
 class NotesTasksWidgetService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
-        return NotesTasksRemoteViewsFactory(applicationContext)
+        val forceWhite = intent.getBooleanExtra("FORCE_WHITE_THEME", false)
+        return NotesTasksRemoteViewsFactory(applicationContext, forceWhiteTheme = forceWhite)
     }
 }
 
-class NotesTasksRemoteViewsFactory(private val context: Context) : RemoteViewsService.RemoteViewsFactory {
+class NotesTasksWhiteWidgetService : RemoteViewsService() {
+    override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
+        return NotesTasksRemoteViewsFactory(applicationContext, forceWhiteTheme = true)
+    }
+}
+
+class NotesTasksRemoteViewsFactory(
+    private val context: Context,
+    private val forceWhiteTheme: Boolean = false
+) : RemoteViewsService.RemoteViewsFactory {
     private var items: List<StarredWidgetItem> = emptyList()
     private val dateFormat = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault())
 
@@ -110,9 +120,9 @@ class NotesTasksRemoteViewsFactory(private val context: Context) : RemoteViewsSe
     override fun getViewAt(position: Int): RemoteViews {
         if (position !in items.indices) return RemoteViews(context.packageName, R.layout.widget_item_starred)
         val views = RemoteViews(context.packageName, R.layout.widget_item_starred)
-        val theme = WidgetTheme.getSelectedTheme(context)
+        val theme = if (forceWhiteTheme) WidgetTheme.LIGHT_CLEAN else WidgetTheme.getSelectedTheme(context)
 
-        // Apply theme background and dynamic text colors (black on light, white on dark)
+        // Apply theme background and dynamic text colors (high-contrast slate/black on white, white on dark)
         views.setInt(R.id.widget_item_container, "setBackgroundResource", theme.bgItemRes)
         views.setTextColor(R.id.widget_item_title, theme.titleTextColor)
         views.setTextColor(R.id.widget_item_content, theme.contentTextColor)
@@ -121,7 +131,11 @@ class NotesTasksRemoteViewsFactory(private val context: Context) : RemoteViewsSe
         when (val item = items[position]) {
             is StarredWidgetItem.NoteItem -> {
                 views.setTextViewText(R.id.widget_item_type, "⭐ NOTE")
-                views.setTextColor(R.id.widget_item_type, android.graphics.Color.parseColor("#F59E0B"))
+                views.setTextColor(
+                    R.id.widget_item_type,
+                    if (theme.isLight) android.graphics.Color.parseColor("#D97706")
+                    else android.graphics.Color.parseColor("#F59E0B")
+                )
                 views.setTextViewText(R.id.widget_item_title, item.title)
                 views.setTextViewText(R.id.widget_item_meta, item.tags)
 
@@ -138,9 +152,11 @@ class NotesTasksRemoteViewsFactory(private val context: Context) : RemoteViewsSe
                 val statusBadge = if (item.isCompleted) "⭐ TASK (COMPLETED)" else "⭐ TASK"
                 views.setTextViewText(R.id.widget_item_type, statusBadge)
                 val badgeColor = if (item.isCompleted) {
-                    android.graphics.Color.parseColor("#10B981")
+                    if (theme.isLight) android.graphics.Color.parseColor("#059669")
+                    else android.graphics.Color.parseColor("#10B981")
                 } else {
-                    android.graphics.Color.parseColor("#38BDF8")
+                    if (theme.isLight) android.graphics.Color.parseColor("#4F46E5")
+                    else android.graphics.Color.parseColor("#38BDF8")
                 }
                 views.setTextColor(R.id.widget_item_type, badgeColor)
 

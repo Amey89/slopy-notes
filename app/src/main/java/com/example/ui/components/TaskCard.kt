@@ -1,8 +1,11 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,9 +17,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Card
@@ -41,16 +43,18 @@ import com.example.data.model.TaskWithSubtasks
 import com.example.ui.model.TaskUiItem
 
 // Top-level static constants to prevent object allocations during 120Hz fast scrolling
-private val TaskCardShape = RoundedCornerShape(18.dp)
-private val CompletedBadgeShape = RoundedCornerShape(6.dp)
-private val BadgeShape = RoundedCornerShape(8.dp)
+private val TaskCardShape = RoundedCornerShape(26.dp)
+private val SquircleCheckShape = RoundedCornerShape(13.dp)
+private val ActionPillShape = RoundedCornerShape(14.dp)
+private val CompletedBadgeShape = RoundedCornerShape(50)
+private val BadgeShape = RoundedCornerShape(50)
 
-private val HighPriorityColor = Color(0xFFDC2626)
+private val HighPriorityColor = Color(0xFFE11D48)
 private val MediumPriorityColor = Color(0xFFD97706)
-private val LowPriorityColor = Color(0xFF3B82F6)
+private val LowPriorityColor = Color(0xFF4F46E5)
 
 /**
- * 120Hz Smooth Scrolling Optimized TaskCard.
+ * 120Hz Smooth Scrolling Optimized TaskCard — Material 3 Expressive Edition.
  * Uses pre-computed [TaskUiItem] where date formatting, priority styling,
  * and subtask metrics are pre-calculated.
  */
@@ -78,12 +82,12 @@ fun TaskCard(
     }
     val effectiveContainerColor = if (cardBg != Color.Unspecified) cardBg else MaterialTheme.colorScheme.surface
 
-    val outlineColor = MaterialTheme.colorScheme.outline
-    val cardBorder = remember(task.isCompleted, isDark, outlineColor) {
-        if (task.isCompleted) {
-            BorderStroke(1.5.dp, if (isDark) Color(0xFF1E5434) else Color(0xFF86EFAC))
-        } else {
-            BorderStroke(1.dp, outlineColor.copy(alpha = 0.2f))
+    val outlineColor = MaterialTheme.colorScheme.outlineVariant
+    val cardBorder = remember(task.isCompleted, task.isStarred, isDark, outlineColor) {
+        when {
+            task.isCompleted -> BorderStroke(1.5.dp, if (isDark) Color(0xFF1E5434) else Color(0xFF86EFAC))
+            task.isStarred -> BorderStroke(1.5.dp, Color(0xFFF59E0B).copy(alpha = 0.55f))
+            else -> BorderStroke(1.dp, outlineColor.copy(alpha = 0.55f))
         }
     }
 
@@ -102,16 +106,16 @@ fun TaskCard(
         modifier = modifier.fillMaxWidth(),
         shape = TaskCardShape,
         colors = CardDefaults.cardColors(containerColor = effectiveContainerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (performanceMode) 0.dp else 1.dp),
         border = cardBorder
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 15.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Main row: Checkbox, Title, Priority, Star, Delete
+            // Main row: Expressive Squircle Checkbox, Title, Priority, Tonal Star & Delete
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -120,22 +124,40 @@ fun TaskCard(
                     onClick = onCompletionClick,
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(
-                        imageVector = if (task.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                        contentDescription = "Toggle completion",
-                        tint = if (task.isCompleted) Color(0xFF10B981) else MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.size(28.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(
+                                color = if (task.isCompleted) Color(0xFF10B981)
+                                else uiItem.priorityColor.copy(alpha = 0.12f),
+                                shape = SquircleCheckShape
+                            )
+                            .border(
+                                width = if (task.isCompleted) 0.dp else 2.dp,
+                                color = if (task.isCompleted) Color.Transparent else uiItem.priorityColor.copy(alpha = 0.7f),
+                                shape = SquircleCheckShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (task.isCompleted) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Completed",
+                                tint = Color.White,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(6.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = task.title,
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.ExtraBold,
                                 textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
                                 color = if (task.isCompleted) {
                                     if (isDark) Color(0xFF86EFAC) else Color(0xFF166534)
@@ -147,24 +169,24 @@ fun TaskCard(
                         )
 
                         if (task.isCompleted) {
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Surface(
                                 shape = CompletedBadgeShape,
                                 color = if (isDark) Color(0xFF173E26) else Color(0xFFD1FAE5)
                             ) {
                                 Text(
-                                    text = "Completed",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    text = "Done",
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.ExtraBold,
                                     color = if (isDark) Color(0xFF6EE7B7) else Color(0xFF047857),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                 )
                             }
                         }
                     }
 
                     if (task.description.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(3.dp))
                         Text(
                             text = task.description,
                             style = MaterialTheme.typography.bodySmall.copy(
@@ -176,50 +198,74 @@ fun TaskCard(
                     }
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
                     IconButton(
                         onClick = onStarClick,
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            imageVector = if (task.isStarred) Icons.Default.Star else Icons.Default.StarBorder,
-                            contentDescription = if (task.isStarred) "Unstar" else "Star",
-                            tint = if (task.isStarred) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.size(26.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(
+                                    if (task.isStarred) Color(0xFFF59E0B).copy(alpha = 0.18f)
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                    ActionPillShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (task.isStarred) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = if (task.isStarred) "Unstar" else "Star",
+                                tint = if (task.isStarred) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
 
                     IconButton(
                         onClick = onDeleteClick,
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteOutline,
-                            contentDescription = "Delete task",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                    ActionPillShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteOutline,
+                                contentDescription = "Delete task",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
                     }
                 }
             }
 
-            // Badges Row: Reminder Pill + Priority Pill
+            // Badges Row: Expressive Pill Priority + Reminder + Due Date
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Priority Badge
+                // Priority Badge Pill
                 Surface(
                     shape = BadgeShape,
-                    color = uiItem.priorityColor.copy(alpha = 0.14f)
+                    color = uiItem.priorityColor.copy(alpha = 0.15f)
                 ) {
                     Text(
                         text = uiItem.priorityText,
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.ExtraBold,
                         color = uiItem.priorityColor,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
 
@@ -230,7 +276,7 @@ fun TaskCard(
                         color = Color(0xFFFEF3C7)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
@@ -259,8 +305,9 @@ fun TaskCard(
                         Text(
                             text = uiItem.formattedDueDate,
                             fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
                     }
                 }

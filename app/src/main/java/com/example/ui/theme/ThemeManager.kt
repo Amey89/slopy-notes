@@ -37,11 +37,19 @@ object ThemeManager {
     val Presets = listOf(
         ThemePresetInfo(
             id = 0,
-            name = "Modern Slate",
-            description = "Refined minimalist charcoal and slate",
-            primaryColor = Color(0xFF2E3A48),
-            previewBgLight = Color(0xFFF9FAFB),
-            previewBgDark = Color(0xFF12161C)
+            name = "M3 Expressive Iris",
+            description = "Vibrant indigo, mint & coral expressive tonal palette",
+            primaryColor = Color(0xFF4F46E5),
+            previewBgLight = Color(0xFFF8F9FE),
+            previewBgDark = Color(0xFF0B0E17)
+        ),
+        ThemePresetInfo(
+            id = 6,
+            name = "Material You Dynamic",
+            description = "Adapts to your Android 12+ wallpaper colors",
+            primaryColor = Color(0xFF6366F1),
+            previewBgLight = Color(0xFFF5F3FF),
+            previewBgDark = Color(0xFF13111C)
         ),
         ThemePresetInfo(
             id = 1,

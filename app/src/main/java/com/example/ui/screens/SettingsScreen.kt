@@ -108,6 +108,7 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Speed
@@ -120,6 +121,7 @@ import com.example.data.sync.GoogleSignInOutcome
 import com.example.ui.theme.ThemeManager
 import com.example.ui.theme.appBackground
 import com.example.ui.viewmodel.NotesTasksViewModel
+import com.example.widget.WidgetTheme
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -477,6 +479,96 @@ fun SettingsScreen(
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.secondary,
                                         modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+                Text(
+                    text = "Home Screen Widget Theme",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Choose Pure White or Dark styling for your home screen widget (or add the dedicated 'Notes & Tasks (White)' widget directly from your launcher)",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                var selectedWidgetTheme by remember {
+                    mutableStateOf(WidgetTheme.getSelectedTheme(context))
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    WidgetTheme.entries.forEach { wTheme ->
+                        val isSelected = selectedWidgetTheme == wTheme
+                        val previewBg = remember(wTheme.previewColorHex) {
+                            Color(android.graphics.Color.parseColor(wTheme.previewColorHex))
+                        }
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .clickable {
+                                    selectedWidgetTheme = wTheme
+                                    WidgetTheme.setSelectedTheme(context, wTheme)
+                                    Toast.makeText(
+                                        context,
+                                        "Home screen widget updated to ${wTheme.displayName} ✓",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                .testTag("widget_theme_${wTheme.key.lowercase()}"),
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isSelected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .background(previewBg, RoundedCornerShape(10.dp))
+                                        .border(
+                                            1.dp,
+                                            if (wTheme.isLight) Color(0xFFCBD5E1) else Color(0xFF334155),
+                                            RoundedCornerShape(10.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = if (wTheme.isLight) Color(0xFF4F46E5) else Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = wTheme.displayName,
+                                        fontSize = 14.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = wTheme.subtitle,
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
